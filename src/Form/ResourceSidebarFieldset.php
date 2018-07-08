@@ -195,15 +195,15 @@ class ResourceSidebarFieldset extends Fieldset
 
         $valueOptions = [];
         if (empty($resourceType) || $resourceType === 'resources') {
-            $valueOptions['column-resource_type'] = 'Resource type'; // @translate,
+            $valueOptions['column-resource_type'] = 'Resource type'; // @translate
         }
-        $valueOptions['column-resource'] = 'Internal id'; // @translate,
-        $valueOptions['column-resource_template'] = 'Resource template name'; // @translate,
-        $valueOptions['column-resource_class'] = 'Resource class term'; // @translate,
+        $valueOptions['column-resource'] = 'Internal id'; // @translate
+        $valueOptions['column-resource_template'] = 'Resource template name'; // @translate
+        $valueOptions['column-resource_class'] = 'Resource class term'; // @translate
         if ($resourceTypeClass && $acl->userIsAllowed($resourceTypeClass, 'change-owner')) {
-            $valueOptions['column-owner_email'] = 'Owner email address'; // @translate,
+            $valueOptions['column-owner_email'] = 'Owner email address'; // @translate
         }
-        $valueOptions['column-is_public'] = 'Visibility public/private'; // @translate,
+        $valueOptions['column-is_public'] = 'Visibility public/private'; // @translate
 
         $this->add([
             'name' => 'resource_data',

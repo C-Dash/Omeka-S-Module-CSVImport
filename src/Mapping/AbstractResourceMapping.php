@@ -329,7 +329,7 @@ abstract class AbstractResourceMapping extends AbstractMapping
         $response = $this->api->search('resource_classes', ['term' => $term]);
         $content = $response->getContent();
         if (empty($content)) {
-            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate;
+            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate
                 $term);
             $this->logger->err($message);
             $this->setHasErr(true);
@@ -338,7 +338,7 @@ abstract class AbstractResourceMapping extends AbstractMapping
         $class = $content[0];
         $classTerm = $class->term();
         if (strtolower($term) != strtolower($classTerm)) {
-            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate;
+            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate
                 $term);
             $this->logger->err($message);
             $this->setHasErr(true);

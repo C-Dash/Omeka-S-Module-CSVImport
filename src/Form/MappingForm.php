@@ -118,7 +118,7 @@ class MappingForm extends Form
             'options' => [
                 'label' => 'Resource template', // @translate
                 'info' => 'A pre-defined template for resource creation', // @translate
-                'empty_option' => 'Select a template', // @translate
+                'empty_option' => '',
                 'resource_value_options' => [
                     'resource' => 'resource_templates',
                     'query' => [],
@@ -141,7 +141,7 @@ class MappingForm extends Form
             'options' => [
                 'label' => 'Class', // @translate
                 'info' => 'A type for the resource. Different types have different default properties attached to them.', // @translate
-                'empty_option' => 'Select a class', // @translate
+                'empty_option' => '',
             ],
             'attributes' => [
                 'id' => 'resource-class-select',
@@ -194,7 +194,7 @@ class MappingForm extends Form
                         return sprintf('%s (%s)', $user->email(), $user->name());
                     },
                 ],
-                'empty_option' => 'Select a user', // @translate
+                'empty_option' => '',
             ],
             'attributes' => [
                 'id' => 'select-owner',
@@ -404,7 +404,7 @@ class MappingForm extends Form
             'options' => [
                 'label' => 'Resource identifier property', // @translate
                 'info' => 'Use this property, generally "dcterms:identifier", to identify the existing resources, so it will be possible to update them. One column of the file must map the selected property. In all cases, it is strongly recommended to add one ore more unique identifiers to all your resources.', // @translate
-                'empty_option' => 'Select below', // @translate
+                'empty_option' => '',
                 'prepend_value_options' => [
                     'internal_id' => 'Internal id', // @translate
                 ],

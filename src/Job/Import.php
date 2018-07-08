@@ -831,8 +831,7 @@ SQL;
      */
     protected function removeEmptyData(array $data)
     {
-        // Data are updated in place.
-        foreach ($data as $name => &$metadata) {
+        foreach ($data as $name => $metadata) {
             switch ($name) {
                 case 'o:resource_template':
                 case 'o:resource_class':
@@ -862,12 +861,12 @@ SQL;
                         unset($data[$name]);
                     }
                     break;
+                // Properties.
                 default:
-                    if (is_array($metadata)) {
-                        if (empty($metadata)) {
-                            unset($data[$name]);
-                        }
+                    if (is_array($metadata) && empty($metadata)) {
+                        unset($data[$name]);
                     }
+                    break;
             }
         }
         return $data;
@@ -986,17 +985,14 @@ SQL;
     protected function deduplicateIds($data)
     {
         $dataBase = $data;
-        // Base to normalize data in order to deduplicate them in one pass.
-        $base = [];
-        $base['id'] = ['o:id' => 0];
         // Deduplicate data.
         $data = array_map('unserialize', array_unique(array_map('serialize',
             // Normalize data.
-            array_map(function ($v) use ($base) {
+            array_map(function ($v) {
                 return isset($v['o:id']) ? ['o:id' => $v['o:id']] : $v;
             }, $data)
         )));
-        // Keep first original data.
+        // Keep original data first.
         $data = array_intersect_key($dataBase, $data);
         return $data;
     }
