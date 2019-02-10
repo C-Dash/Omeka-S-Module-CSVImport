@@ -57,7 +57,8 @@ abstract class AbstractResourceMapping extends AbstractMapping
                     return trim($v, "\t\n\r   ");
                 }, $values);
             } else {
-                $values = [$values];
+                $values = explode($multivalueSeparator, $values);
+                $values = array_map(function ($v) { return trim($v); }, $values);
             }
             $values = array_filter($values, 'strlen');
             if ($values) {
@@ -73,10 +74,6 @@ abstract class AbstractResourceMapping extends AbstractMapping
         $data = &$this->data;
 
         // Set columns.
-        if (isset($this->args['column-resource'])) {
-            $this->map['resource'] = $this->args['column-resource'];
-            $data['o:id'] = null;
-        }
         if (isset($this->args['column-resource_template'])) {
             $this->map['resourceTemplate'] = $this->args['column-resource_template'];
             $data['o:resource_template'] = null;
@@ -153,11 +150,6 @@ abstract class AbstractResourceMapping extends AbstractMapping
             $this->map['item'] = $this->args['column-item'];
             $data['o:item'] = null;
         }
-
-        // Set default values.
-        if (!empty($this->args['o:item']['o:id'])) {
-            $data['o:item'] = ['o:id' => (int) $this->args['o:item']['o:id']];
-        }
     }
 
     /**
@@ -171,13 +163,8 @@ abstract class AbstractResourceMapping extends AbstractMapping
     {
         $data = &$this->data;
 
-        if (isset($this->map['resource'][$index])) {
-            $identifier = reset($values);
-            $identifierProperty = $this->map['resource'][$index] ?: 'internal_id';
-            $resourceId = $this->findResource($identifier, $identifierProperty);
-            if ($resourceId) {
-                $data['o:id'] = $resourceId;
-            }
+        if ($index === $this->args['identifier_column']) {
+            $data['o-module-csv-import:resource-identifier'] = reset($values);
         }
 
         if (isset($this->map['resourceTemplate'][$index])) {

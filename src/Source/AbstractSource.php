@@ -150,7 +150,7 @@ abstract class AbstractSource implements SourceInterface
         if (empty($iterator)) {
             return;
         }
-        if ($offset > iterator_count($this->iterator)) {
+        if ($offset >= iterator_count($this->iterator)) {
             return;
         }
 
@@ -164,9 +164,7 @@ abstract class AbstractSource implements SourceInterface
 
     protected function cleanRow(array $row)
     {
-        return array_map(function ($v) {
-            return trim($v, "\t\n\r   ");
-        }, $row);
+        return array_map(function ($v) { return trim($v); }, $row);
     }
 
     public function clean()

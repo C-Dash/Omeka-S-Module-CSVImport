@@ -1,9 +1,7 @@
 <?php
 namespace CSVImport\Form;
 
-use Zend\EventManager\Event;
-use Zend\EventManager\EventManagerAwareTrait;
-use Zend\Form\Element;
+use Omeka\Settings\UserSettings;
 use Zend\Form\Form;
 
 class ImportForm extends Form
@@ -34,7 +32,7 @@ class ImportForm extends Form
      */
     protected $enclosureList = [
         '"' => 'double quote', // @translate
-        "'" => 'quote', // @translate
+        "'" => 'single quote', // @translate
         '#' => 'hash', // @translate
         // '' => 'empty', // @translate
     ];
@@ -43,6 +41,11 @@ class ImportForm extends Form
      * @var array
      */
     protected $configCsvImport;
+
+    /**
+     * @var UserSettings
+     */
+    protected $userSettings;
 
     public function init()
     {
@@ -85,7 +88,8 @@ class ImportForm extends Form
         // Commenting out code that uses UserSettings in case we want to replace or
         // use them differently later
 
-        $valueOptions = $this->getDelimiterList();
+        $valueParameters = $this->getDelimiterList();
+        $value = $this->userSettings->get('csv_import_delimiter', $defaults['csv_import_delimiter']);
         $this->add([
             'name' => 'delimiter',
             'type' => Element\Select::class,
@@ -99,17 +103,66 @@ class ImportForm extends Form
             ],
         ]);
 
-        $valueOptions = $this->getEnclosureList();
+        $valueParameters = $this->getEnclosureList();
+        $value = $this->userSettings->get('csv_import_enclosure', $defaults['csv_import_enclosure']);
         $this->add([
             'name' => 'enclosure',
             'type' => Element\Select::class,
             'options' => [
                 'label' => 'CSV column enclosure', // @translate
                 'info' => 'A single character that will be used to separate columns in the csv file. The enclosure can be omitted when the content does not contain the delimiter.', // @translate
-                'value_options' => $valueOptions,
+                'value_options' => $valueParameters,
             ],
             'attributes' => [
-                'id' => 'enclosure',
+                'value' => $this->integrateParameter($value),
+            ],
+        ]);
+
+        $this->add([
+                'name' => 'resource_type',
+                'type' => 'select',
+                'options' => [
+                    'label' => 'Import type', // @translate
+                    'info' => 'The type of data being imported', // @translate
+                    'value_options' => [
+                        'items' => 'Items', // @translate
+                        'item_sets' => 'Item sets', // @translate
+                        'media' => 'Media', // @translate
+                        'resources' => 'Mixed resources', // @translate
+                        'users' => 'Users', // @translate
+                    ],
+                ],
+                'attributes' => [
+                    'value' => 'items',
+                ],
+        ]);
+
+        
+        $this->add([
+            'name' => 'automap_check_names_alone',
+            'type' => 'checkbox',
+            'options' => [
+                'label' => 'Automap with simple labels', // @translate
+                'info' => 'If checked, column headings that match property labels will be mapped automatically (for example, "Title" to dcterms:title).', // @translate
+            ],
+            'attributes' => [
+                'id' => 'automap_check_names_alone',
+                'value' => (int) (bool) $this->userSettings->get(
+                    'csv_import_automap_check_names_alone',
+                    $defaults['csv_import_automap_check_names_alone']),
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'comment',
+            'type' => 'textarea',
+            'options' => [
+                'label' => 'Comment', // @translate
+                'info' => 'A note about the purpose or source of this import', // @translate
+            ],
+            'attributes' => [
+                'id' => 'comment',
+                'class' => 'input-body',
             ],
         ]);
 
@@ -174,6 +227,11 @@ class ImportForm extends Form
     public function setConfigCsvImport(array $configCsvImport)
     {
         $this->configCsvImport = $configCsvImport;
+    }
+
+    public function setUserSettings(UserSettings $userSettings)
+    {
+        $this->userSettings = $userSettings;
     }
 
     /**

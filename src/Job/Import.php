@@ -302,8 +302,9 @@ class Import extends AbstractJob
                 $ids = $findResourcesFromIdentifiers($identifiers, $this->identifierPropertyId, $this->resourceType);
                 $idsToProcess = array_filter($ids);
                 $idsRemaining = array_diff_key($ids, $idsToProcess);
+
                 if ($idsRemaining) {
-                    $identifiersRemaining = array_intersect_key($identifiers, $idsRemaining);
+                    $identifiersRemaining = array_keys($idsRemaining);
                     $this->stats(self::ACTION_SKIP, $identifiersRemaining);
                     $this->logger->info(new Message('The following identifiers are not associated with a resource and were skipped: "%s".', // @translate
                         implode('", "', $identifiersRemaining)));
@@ -645,35 +646,8 @@ SQL;
 
         foreach ($data as $key => $entityJson) {
             $identifier = null;
-            switch ($this->identifierPropertyId) {
-                case 'internal_id':
-                    if (!empty($entityJson['o:id'])) {
-                        $identifier = $entityJson['o:id'];
-                    }
-                    break;
-
-                default:
-                    switch ($this->resourceType) {
-                        case 'item_sets':
-                        case 'items':
-                        case 'media':
-                            foreach ($entityJson as $index => $value) {
-                                if (is_array($value) && !empty($value)) {
-                                    $value = reset($value);
-                                    if (isset($value['property_id'])
-                                        && $value['property_id'] == $this->identifierPropertyId
-                                        && isset($value['@value'])
-                                        && strlen($value['@value'])
-                                    ) {
-                                        $identifier = $value['@value'];
-                                        break;
-                                    }
-                                }
-                            }
-                            break;
-                        case 'users':
-                            break;
-                    }
+            if (isset($entityJson['o-module-csv-import:resource-identifier'])) {
+                $identifier = $entityJson['o-module-csv-import:resource-identifier'];
             }
             $identifiers[$key] = $identifier;
         }

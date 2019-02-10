@@ -64,7 +64,9 @@ class PropertyMapping extends AbstractMapping
                             return trim($v, "\t\n\r   ");
                         }, $values);
                     } else {
-                        $values = [$values];
+
+                        $values = explode($multivalueSeparator, $values);
+                        $values = array_map(function ($v) { return trim($v); }, $values);
                     }
                     $values = array_filter($values, 'strlen');
                     foreach ($values as $value) {

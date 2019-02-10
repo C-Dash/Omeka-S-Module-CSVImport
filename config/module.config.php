@@ -111,14 +111,6 @@ return [
     ],
     'js_translate_strings' => [
         'Remove mapping', // @translate
-        'Undo remove mapping', // @translate
-        'Select an item type at the left before choosing a resource class.', // @translate
-        'Select an element at the left before choosing a property.', // @translate
-        'Please enter a valid language tag.', // @translate
-        'Set multivalue separator for all columns', // @translate
-        'Unset multivalue separator for all columns', // @translate
-        'Advanced settings', // @translate
-        'Identifier for', // @translate
     ],
     'csvimport' => [
         'sources' => [
@@ -127,13 +119,6 @@ return [
             'text/tab-separated-values' => Source\TsvFile::class,
         ],
         'mappings' => [
-            'item_sets' => [
-                'label' => 'Item sets', // @translate
-                'mappings' => [
-                    Mapping\ItemSetMapping::class,
-                    Mapping\PropertyMapping::class,
-                ],
-            ],
             'items' => [
                 'label' => 'Items', // @translate
                 'mappings' => [
@@ -141,6 +126,10 @@ return [
                     Mapping\PropertyMapping::class,
                     Mapping\MediaSourceMapping::class,
                 ],
+            ],
+            'item_sets' => [
+                Mapping\ItemSetMapping::class,
+                Mapping\PropertyMapping::class,
             ],
             'media' => [
                 'label' => 'Media', // @translate
@@ -172,103 +161,14 @@ return [
             'oembed' => null,
             'youtube' => null,
         ],
-        'automapping' => [
-        ],
         'user_settings' => [
-            'csvimport_delimiter' => ',',
-            'csvimport_enclosure' => '"',
-            'csvimport_multivalue_separator' => ',',
-            'csvimport_multivalue_by_default' => false,
-            'csvimport_language' => '',
-            'csvimport_language_by_default' => false,
-            'csvimport_identifier_property' => '',
-            'csvimport_rows_by_batch' => 20,
-            'csvimport_automap_by_label' => false,
-            'csvimport_automap_check_user_list' => false,
-            'csvimport_automap_user_list' => [
-                'owner' => 'owner_email',
-                'owner email' => 'owner_email',
-                'id' => 'internal_id',
-                'internal id' => 'internal_id',
-                'resource' => 'resource',
-                'resources' => 'resource',
-                'resource id' => 'resource',
-                'resource identifier' => 'resource {dcterms:identifier}',
-                'record' => 'resource',
-                'records' => 'resource',
-                'record id' => 'resource',
-                'record identifier' => 'resource {dcterms:identifier}',
-                'resource type' => 'resource_type',
-                'record type' => 'resource_type',
-                'resource template' => 'resource_template',
-                'item type' => 'resource_class',
-                'resource class' => 'resource_class',
-                'visibility' => 'is_public',
-                'public' => 'is_public',
-                'item set' => 'item_set',
-                'item sets' => 'item_set',
-                'collection' => 'item_set',
-                'collections' => 'item_set',
-                'item set id' => 'item_set',
-                'collection id' => 'item_set',
-                'item set identifier' => 'item_set {dcterms:identifier}',
-                'collection identifier' => 'item_set {dcterms:identifier}',
-                'item set title' => 'item_set {dcterms:title}',
-                'collection title' => 'item_set {dcterms:title}',
-                'additions' => 'is_open',
-                'open' => 'is_open',
-                'item' => 'item',
-                'items' => 'item',
-                'item id' => 'item',
-                'item identifier' => 'item {dcterms:identifier}',
-                'media' => 'media',
-                'media id' => 'media',
-                'media identifier' => 'media {dcterms:identifier}',
-                'media url' => 'media_source {url}',
-                'media html' => 'media_source {html}',
-                'html' => 'media_source {html}',
-                'iiif' => 'media_source {iiif}',
-                'iiif image' => 'media_source {iiif}',
-                'oembed' => 'media_source {oembed}',
-                'youtube' => 'media_source {youtube}',
-                'user' => 'user_name',
-                'name' => 'user_name',
-                'display name' => 'user_name',
-                'username' => 'user_name',
-                'user name' => 'user_name',
-                'email' => 'user_email',
-                'user email' => 'user_email',
-                'role' => 'user_role',
-                'user role' => 'user_role',
-                'active' => 'user_is_active',
-                'is active' => 'user_is_active',
-
-                // Automapping from external modules are added here, so the user
-                // gets them all the first time.
-
-                // From module File Sideload, in order to set them by default.
-                'file' => 'media_source {sideload}',
-                'files' => 'media_source {sideload}',
-                'upload' => 'media_source {sideload}',
-                'sideload' => 'media_source {sideload}',
-                'file sideload' => 'media_source {sideload}',
-                // From module Mapping.
-                'latitude' => 'mapping_latitude',
-                'longitude' => 'mapping_longitude',
-                'latitude/longitude' => 'mapping_latitude_longitude',
-                'default latitude' => 'mapping_default_latitude',
-                'default longitude' => 'mapping_default_longitude',
-                'default zoom' => 'mapping_default_zoom',
-                // From module Folksonomy.
-                'tag' => 'tag',
-                'tags' => 'tag',
-                'tagger' => 'tagging {owner}',
-                'tag status' => 'tagging {status}',
-                'tag date' => 'tagging {created}',
-                // From module Group.
-                'group' => 'group',
-                'groups' => 'group',
-            ],
+            'csv_import_delimiter' => ',',
+            'csv_import_enclosure' => '"',
+            'csv_import_multivalue_separator' => ',',
+            'csv_import_rows_by_batch' => 20,
+            'csv_import_global_language' => '',
+            'csv_import_identifier_property' => '',
+            'csv_import_automap_check_names_alone' => false,
         ],
     ],
 ];

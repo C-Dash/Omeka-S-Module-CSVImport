@@ -11,20 +11,20 @@
          */
 
         var activeElement = null;
+        var activeElements = null;
 
         var defaultSidebarHtml = null;
 
         var actionsHtml = '<ul class="actions">'
             + '<li><a aria-label="' + Omeka.jsTranslate('Remove mapping') + '" title="' + Omeka.jsTranslate('Remove mapping') + '" class="o-icon-delete remove-mapping" href="#" style="display: inline;"></a></li>'
-            + '<li><a aria-label="' + Omeka.jsTranslate('Undo remove mapping') + '" title="' + Omeka.jsTranslate('Undo remove mapping') + '" class="o-icon-undo restore-mapping" href="#" style="display: none;"></a></li>'
             + '</ul>';
 
-        setMultivalueSeparatorByDefault();
-        setLanguageByDefault();
+        var batchEditCheckboxes = $('.column-select, .select-all');
+        var batchEditButton = $('#batch-edit-options');
 
-         /*
-          * Rebinding chosen selects and property selector after sidebar hydration.
-          */
+        /*
+         * Rebinding chosen selects and property selector after sidebar hydration.
+         */
 
          function rebindInputs(sidebar) {
               // Remove old chosen html and rebind event.
@@ -66,11 +66,14 @@
          * Sidebar chooser (buttons on each mappable element).
          */
 
-        $('.add-mapping.button, .column-header + .actions a').on('click', function(e) {
+        $('.column-header + .actions a').on('click', function(e) {
             e.preventDefault();
             $('.property-mapping input.value-language').val('');
             if (activeElement !== null) {
                 activeElement.removeClass('active');
+            }
+            if ($('.column-select:checked').length > 0) {
+                resetActiveColumns();
             }
             activeElement = $(e.target).closest('tr.mappable');
             activeElement.addClass('active');
@@ -97,26 +100,94 @@
                 sidebar.html(defaultSidebarHtml);
                 rebindInputs(sidebar);
             }
+            
             Omeka.openSidebar(sidebar);
+            populateSidebar();
+        });
+
+        function populateSidebar() {
+            $('.active.element .options :input:not(:disabled)').each(function() {
+                var optionInput = $(this);
+                var optionName = optionInput.parents('.option').attr('class');
+                optionName = optionName.replace(' option', '').replace('column-', '');
+                var sidebarOptionInput = $('#column-options .' + optionName + ' :input');
+                if (sidebarOptionInput.attr('type') == "checkbox") {
+                    sidebarOptionInput.prop('checked', true);
+                }
+                if (sidebarOptionInput.attr('type') == "text") {
+                    sidebarOptionInput.val(optionInput.val());
+                }
+                if (sidebarOptionInput.prop('type') == "select-one") {
+                    var indexString = /(\[)(\d*)(\])/;
+                    var selectOptionName = this.name.replace(indexString, '');
+                    sidebarOptionInput.val(selectOptionName);
+                }
+            });
+        }
+
+        /*
+         * Batch edit options.
+         */
+
+        $('.batch-edit input[type="checkbox"], .batch-edit .select-all').change(function() {
+            if ($('.column-select:checked').length > 0) {
+                batchEditButton.removeClass('inactive').addClass('active sidebar-content');
+            } else {
+                batchEditButton.addClass('inactive').removeClass('active sidebar-content');
+            }
+        });
+
+        $(document).on('click', '#batch-edit-options.active', function() {
+            defaultSidebarHtml = $('#column-options').html();
+            activeElements = $('.column-select:checked').parents('.mappable.element');
+            activeElements.addClass('active');
+            $(this).removeClass('active sidebar-content').addClass('inactive');
+            batchEditCheckboxes.prop('disabled', true);
+            $('#column-options').addClass('batch-edit');
+            $('.reset-link').each(function() {
+                var reset = $(this);
+                var optionInputsHtml = reset.siblings('.option-inputs').html();
+                reset.attr('data-option-inputs', optionInputsHtml);
+            });
         });
 
         /*
          * Sidebar actions (data mapping and options on the active element).
          */
 
-        $('.sidebar-close').on('click', function() {
-            $('tr.mappable.active').removeClass('active');
+        $('#resource-type-column').change(function() {
+            $('.mapping.resource-type').remove();
+            var resourceTypeSelect = $(this);
+            var flagName = resourceTypeSelect.data('flag-name');
+            var flagValue = 1;
+            var flagLabel = resourceTypeSelect.data('flag-label');
+            var flagLiClass = resourceTypeSelect.data('flag-class');
+            var selectedColumnName = resourceTypeSelect.val();
+
+            if (selectedColumnName == "") {
+                return;
+            }
+            activeElement = $('[name="' + selectedColumnName + '"]').parents('.mappable.element');
+            applyMappings(flagName, flagValue, flagLiClass, flagLabel);
+            activeElement.find('.resource-type .actions').remove();
+            activeElement = null;
+        });
+
+        $(document).on('click', '.sidebar-close', function() {
+            resetActiveColumns();
+            $('#column-options').removeClass('batch-edit');
         });
 
         // Generic sidebar actions.
-        $(document).on('click', '.toggle-nav button', function() {
-            $('.active.toggle.button').removeAttr('disabled');
-            $('.toggle-nav .active.button, .toggle-view.active').removeClass('active')
-            var button = $(this);
-            var target = $(button.data('toggle-selector'));
-            button.addClass('active').attr('disabled', true);
-            target.addClass('active');
-            target.find(':input').removeAttr('disabled');
+        $(document).on('o:expanded', '#add-mapping a', function() {
+            var mappingGroup = $(this).parents('.mapping-group');
+            var mappingGroupID = mappingGroup.attr('id');
+            $('#add-mapping .mapping-group:not(#' + mappingGroupID + ') a.collapse').each(function() {
+                var openMappingGroup = $(this);
+                openMappingGroup.removeClass('collapse').addClass('expand');
+                openMappingGroup.attr('aria-label', Omeka.jsTranslate('Expand')).attr('title', Omeka.jsTranslate('Expand'));
+                openMappingGroup.trigger('o:collapsed');
+            });
         });
 
         $(document).on('change', '.resource-type-select select', function() {
@@ -170,7 +241,7 @@
                         }
                     }
                     else {
-                        if (flagInput.parents('.toggle-view:hidden').length > 0) {
+                        if (!flagInput.hasClass('touched')) {
                             return;
                         }
                         var flagSelected = flagInput.find(':selected');
@@ -190,12 +261,11 @@
                         return;
                     }
                     var checkboxId = flagInput.attr('id');
-                    var flagName = flagInput.data('flag-name');
                     var flagLabel = $('label[for="' + checkboxId + '"]').text();
-                    if (isSpecificInput && !isSpecificInputForResourceType) {
-                        flagValue = '';
-                    } else {
-                        flagValue = flagInput.is(':checked') ? '1' : '';
+                    var optionClass = '.' + flagInput.data('flag');
+                    if (flagInput.is(':checked')) {
+                        var flagValue = flagInput.val();
+                        applyMappings(flagName, flagValue, flagLiClass, flagLabel);
                     }
                     applyMappings(flagName, flagValue, flagLiClass, flagLabel, flagUnique);
                 }
@@ -225,151 +295,102 @@
                 targetLi.removeClass('selected');
             });
 
-            function applyMappings(flagName, flagValue, flagLiClass, flagLabel, flagUnique) {
-                // There may be multiple classes, so the search requires a "." between each class.
-                var flagLiClassFind = '.' + flagLiClass.replace(/ /g, '.');
-                var hasFlag = activeElement.find('ul.mappings li' + flagLiClassFind);
-                if (flagValue === 'default' || flagValue === '') {
-                    if (hasFlag.length) {
-                        hasFlag.remove();
-                    }
-                    return;
-                }
-
-                if (hasFlag.length) {
-                    if (flagUnique){
-                        activeElement.find('ul.mappings ' + flagLiClassFind).remove();
-                        hasFlag = activeElement.find('ul.mappings li' + flagLiClassFind);
-                    }
-                }
-
-                if (hasFlag.length === 0 && flagName) {
-                    var index = activeElement.data('element-id');
-                    flagName = flagName + "[" + index + "]";
-                    var newInput = $('<input type="hidden"></input>').attr('name', flagName).attr('value', flagValue);
-                    var newMappingLi = $('<li class="mapping ' + flagLiClass + '">' + flagLabel  + actionsHtml  + '</li>');
-                    newMappingLi.append(newInput);
-                    var existingMappingLi = activeElement.find('ul.mappings ' + flagLiClassFind).filter(':last');
-                    if (existingMappingLi.length) {
-                        existingMappingLi.after(newMappingLi);
-                    } else {
-                        activeElement.find('ul.mappings').append(newMappingLi);
-                    }
-                }
-            };
-
             Omeka.closeSidebar(sidebar);
             sidebar.html(defaultSidebarHtml);
+        });
+
+        $(document).on('change', '.sidebar input, .sidebar select, .sidebar textarea', function() {
+            var sidebarInput = $(this);
+            sidebarInput.addClass('touched');
+            if ($('#column-options').hasClass('batch-edit')) {
+                sidebarInput.parents('.option').addClass('batch-edit-touched');
+            }
+        });
+        
+        $(document).on('click', '.reset-link', function(e) {
+            e.preventDefault();
+            var reset = $(this);
+            var columnOption = reset.parents('.option');
+            var columnOptionInputsHtml = reset.data('option-inputs');
+            columnOption.removeClass('batch-edit-touched');
+            columnOption.find('.option-inputs').html(columnOptionInputsHtml);
         });
 
         $(document).on('click', '#column-options .confirm-panel button', function() {
             var sidebar = $(this).parents('.sidebar');
-
             var languageTextInput = $('#value-language');
-            if (languageTextInput.hasClass('touched')) {
-                var languageHiddenInput = activeElement.find('.column-language');
-                var languageValue = languageTextInput.val();
-                if (languageValue !== '') {
-                    setLanguage(languageValue, languageTextInput);
-                } else {
-                    activeElement.find('li.column-language').hide();
-                    languageHiddenInput.attr('disabled', true);
-                }
+            var languageValue = languageTextInput.val();
+            if (activeElements == null) {
+                activeElements = activeElement;
             }
 
-            sidebar.find('input[type=checkbox]').each(function() {
-                var checkboxInput = $(this);
-                if (checkboxInput.hasClass('touched')) {
-                    var optionClass = '.' + checkboxInput.data('column-option');
-                    var optionLi = activeElement.find(optionClass);
-                    if (checkboxInput.is(':checked')) {
-                        optionLi.show();
-                        optionLi.find('input[type=hidden]').removeAttr('disabled');
+            activeElements.each(function() {
+                activeElement = $(this);
+                if (languageTextInput.hasClass('touched')) {
+                    var languageHiddenInput = activeElement.find('.column-language');
+                    if (languageValue !== '') {
+                        setLanguage(languageValue, languageTextInput);
                     } else {
-                        optionLi.hide();
-                        optionLi.find('input[type=hidden]').attr('disabled', true);
+                        activeElement.find('li.column-language').hide();
+                        languageHiddenInput.prop('disabled', true);
                     }
                 }
-            });
-
-            sidebar.find('select').each(function() {
-                var selectInput = $(this);
-                if (selectInput.hasClass('touched')) {
-                    var selectedOption = selectInput.find(':selected');
-                    var selectedOptionValue = selectedOption.val();
-                    var optionClass = '.' + selectInput.data('column-option');
-                    var optionLi = activeElement.find(optionClass);
-                    if (selectedOptionValue !== 'default') {
-                        optionLi.show();
-                        optionLi.find('.option-label').text(selectedOption.text());
-                        optionLi.find('input[type=hidden]').attr('disabled', true);
-                        optionLi.find('.' + selectedOptionValue).removeAttr('disabled');
-                    } else {
-                        optionLi.hide();
-                        optionLi.find('input[type=hidden]').attr('disabled', true);
+    
+                sidebar.find('input[type="checkbox"]').each(function() {
+                    var checkboxInput = $(this);
+                    if (checkboxInput.hasClass('touched')) {
+                        var optionClass = '.' + checkboxInput.data('column-option');
+                        var optionLi = activeElement.find($(optionClass));
+                        if (checkboxInput.is(':checked')) {
+                            optionLi.show();
+                            optionLi.find('input[type="hidden"]').prop('disabled', false);
+                        } else {
+                            optionLi.hide();
+                            optionLi.find('input[type="hidden"]').prop('disabled', true);
+                        }
                     }
-                }
+                });
+    
+                sidebar.find('select').each(function() {
+                    var selectInput = $(this);
+                    if (selectInput.hasClass('touched')) {
+                        var selectedOption = selectInput.find(':selected');
+                        var selectedOptionValue = selectedOption.val();
+                        var optionClass = '.' + selectInput.data('column-option');
+                        var optionLi = activeElement.find(optionClass);
+                        optionLi.find('input[type="hidden"]').prop('disabled', true);
+                        if (selectedOptionValue !== 'default') {
+                            optionLi.show();
+                            optionLi.find('.option-label').text(selectedOption.text());
+                            optionLi.find('.' + selectedOptionValue).prop('disabled', false)
+                        } else {
+                            optionLi.hide();
+                        }
+                    }
+                });
+                resetActiveColumns();
             });
-
             Omeka.closeSidebar(sidebar);
+            $('#column-options').removeClass('batch-edit');
             sidebar.html(defaultSidebarHtml);
         });
+
+        function resetActiveColumns() {
+            activeElements = null;
+            $('tr.mappable.active').removeClass('active');
+            batchEditCheckboxes.prop('checked', false).prop('disabled', false);
+            batchEditButton.removeClass('active sidebar-content').addClass('inactive');
+        }
 
         /*
          * Actions on mapped columns.
          */
 
-        // Clear default mappings.
-        $('body').on('click', '.clear-defaults', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            var fieldset = $(this).parents('fieldset');
-            fieldset.find('li.mapping.default').remove();
-        });
-
         // Remove mapping.
         $('.section').on('click', 'a.remove-mapping', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            var mappingToRemove = $(this).parents('li.mapping');
-            mappingToRemove.find('input').prop('disabled', true);
-            mappingToRemove.addClass('delete');
-            mappingToRemove.find('.restore-mapping').show();
-            $(this).hide();
-        });
-
-        // Restore a removed mapping.
-        $('.section').on('click', 'a.restore-mapping', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            var mappingToRemove = $(this).parents('li.mapping');
-            mappingToRemove.find('.remove-mapping').show();
-            mappingToRemove.find('span.restore-mapping').hide();
-            mappingToRemove.find('input').prop('disabled', false);
-            mappingToRemove.removeClass('delete');
-            $(this).hide();
-        });
-
-        // Remove option.
-        $('ul.options').on('click', 'a.remove-option', function(e){
-            e.stopPropagation();
-            e.preventDefault();
-            var optionToRemove = $(this).parents('li.option');
-            optionToRemove.find('input.column-option').prop('disabled', true);
-            optionToRemove.addClass('delete');
-            optionToRemove.find('.restore-option').show();
-            optionToRemove.find('.remove-option').hide();
-        });
-
-        // Restore option.
-        $('ul.options').on('click', 'a.restore-option', function(e){
-            e.stopPropagation();
-            e.preventDefault();
-            var optionToRestore = $(this).parents('li.option');
-            optionToRestore.find('input.column-option').prop('disabled', false);
-            optionToRestore.removeClass('delete');
-            optionToRestore.find('.remove-option').show();
-            optionToRestore.find('.restore-option').hide();
+            $(this).parents('li.mapping').remove();
         });
 
         /**
@@ -507,30 +528,60 @@
          * Modified from resource-form.js in core, unavailable here.
          */
 
-        /*
-         * Check validity of a language.
-         */
-        $('input.value-language').on('keyup', function(e) {
+        $(document).on('keyup', 'input.value-language', function(e) {
             e.preventDefault();
             e.stopPropagation();
             if ('' === this.value || Omeka.langIsValid(this.value)) {
                 this.setCustomValidity('');
             } else {
-                this.setCustomValidity(Omeka.jsTranslate('Please enter a valid language tag'))
+                this.setCustomValidity(Omeka.jsTranslate('Please enter a valid language tag'));
             }
         });
+
+        function applyMappings(flagName, flagValue, flagLiClass, flagLabel) {
+            var hasFlag = activeElement.find('ul.mappings li.' + flagLiClass);
+            if (flagValue == 'default') {
+                if (hasFlag.length) {
+                    hasFlag.remove();
+                } else {
+                    return;
+                }
+            }
+            if (hasFlag.length) {
+                var flagUnique = (flagLiClass !== 'property');
+                if (flagUnique){
+                    activeElement.find('ul.mappings .' + flagLiClass).remove();
+                    hasFlag = activeElement.find('ul.mappings li.' + flagLiClass);
+                }
+            }
+  
+            if (hasFlag.length === 0) {
+                var index = activeElement.data('element-id');
+                flagName = flagName + "[" + index + "]";
+                var newInput = $('<input type="hidden"></input>').attr('name', flagName).attr('value', flagValue);
+                var newMappingLi = $('<li class="mapping ' + flagLiClass + '">' + flagLabel  + actionsHtml  + '</li>');
+                newMappingLi.append(newInput);
+                var existingMappingLi = activeElement.find('ul.mappings .' + flagLiClass).filter(':last');
+                if (existingMappingLi.length) {
+                    existingMappingLi.after(newMappingLi);
+                } else {
+                    activeElement.find('ul.mappings').append(newMappingLi);
+                }
+            }
+        };
+
 
         function setLanguage(lang) {
             var valueLanguageElement = document.getElementById('value-language');
             if (lang == '') {
-                valueLanguageElement.setCustomValidity(Omeka.jsTranslate('Please enter a valid language tag.'));
+                valueLanguageElement.setCustomValidity(Omeka.jsTranslate('Please enter a valid language tag'));
             }
             if (typeof valueLanguageElement.reportValidity === 'function') {
                 var valid = valueLanguageElement.reportValidity();
             } else {
                 var valid = valueLanguageElement.checkValidity();
                 if (! valid) {
-                    alert(Omeka.jsTranslate('Please enter a valid language tag.'));
+                    alert(Omeka.jsTranslate('Please enter a valid language tag'));
                 }
             }
 
@@ -543,38 +594,18 @@
             }
         }
 
-        /*
-         * Manage identifiers.
-         */
 
-        function checkResourceIdentifier() {
-            return checkIdentifier('column-resource_property');
-        }
-
-        function checkItemSetIdentifier() {
-            return checkIdentifier('column-item_set_property');
-        }
-
-        function checkItemIdentifier() {
-            return checkIdentifier('column-item_property');
-        }
-
-        function checkMediaIdentifier() {
-            return checkIdentifier('column-media_property');
-        }
-
-        function checkIdentifier(elementProperty) {
-            var valid = true;
-            var elementResourceProperty = document.getElementById(elementProperty);
-            var valueResourceProperty = $('#' + elementProperty).chosen().val();
-            if (valueResourceProperty === '') {
-                elementResourceProperty.setCustomValidity(Omeka.jsTranslate('Please enter a valid resource identifier property.'));
-                elementResourceProperty.reportValidity();
-                valid = false;
-                alert(Omeka.jsTranslate('Please enter a valid resource property for the identifier.'));
+        function toggleActionOptions() {
+            var action = $('#action').val();
+            if (action === 'create') {
+                $('.action-option')
+                    .closest('.field').hide();
+            } else {
+                $('.action-option')
+                    .closest('.field').show();
             }
-            return valid;
         }
-
+        toggleActionOptions();
+        $('#action').change(toggleActionOptions);
     });
 })(jQuery);

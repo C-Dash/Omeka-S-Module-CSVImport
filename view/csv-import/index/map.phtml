@@ -6,15 +6,14 @@ $escapeHtml = $this->plugin('escapeHtml');
 $this->htmlElement('body')->appendAttribute('class', 'no-section-hashes');
 $this->headStyle()->appendStyle('.inputs input.value-language.active[type="text"] { background-color: #fff; padding: 0 5px; display: inherit; }');
 $this->headLink()->appendStylesheet($this->assetUrl('css/csvimport.css', 'CSVImport'));
-$this->headScript()->appendFile($this->assetUrl('js/resource-form.js', 'Omeka'));
 $this->headScript()->appendFile($this->assetUrl('js/csvimport.js', 'CSVImport'));
 
 $resourceTypeLabels = [
-    'items' => $translate('items'),
-    'item_sets' => $translate('item sets'),
-    'media' => $translate('media'),
-    'resources' => $translate('resources'),
-    'users' => $translate('users'),
+    'items' => $this->translate('items'),
+    'item_sets' => $this->translate('item sets'),
+    'media' => $this->translate('media'),
+    'resources' => $this->translate('mixed resources'),
+    'users' => $this->translate('users'),
 ];
 $pageTitle = isset($resourceTypeLabels[$resourceType])
     ? sprintf($translate('Import settings for %s'), $resourceTypeLabels[$resourceType])
@@ -28,47 +27,50 @@ $pageTitle = isset($resourceTypeLabels[$resourceType])
 </fieldset>
 <nav class="section-nav">
     <ul>
-        <li class="active"><a href="#resource-fieldset"><?php echo $translate('Basic Settings'); ?></a></li>
-        <li><a href="#advanced-fieldset"><?php echo $translate('Advanced Settings'); ?></a></li>
-        <li><a href="#mapping-data"><?php echo $translate('Map to Omeka S data'); ?></a></li>
+        <li class="active"><a href="#mapping-data"><?php echo $this->translate('Map to Omeka S data'); ?></a></li>
+        <li><a href="#csv-import-basics-fieldset"><?php echo $this->translate('Basic Settings'); ?></a></li>
+        <li><a href="#csv-import-advanced-fieldset"><?php echo $this->translate('Advanced Settings'); ?></a></li>
     </ul>
 </nav>
-<fieldset id="resource-fieldset" class="section active">
-    <?php
-    // Render some form elements in a different tab.
-    $elementsMap = [];
-    $elementsMap['multivalue_separator'] = $form->get('multivalue_separator');
-    $form->remove('multivalue_separator');
-    $elementsMap['multivalue_by_default'] = $form->get('multivalue_by_default');
-    $form->remove('multivalue_by_default');
-    $elementsMap['language'] = $form->get('language');
-    $form->remove('language');
-    $elementsMap['language_by_default'] = $form->get('language_by_default');
-    $form->remove('language_by_default');
-    // Render fieldsets separetly.
-    $fieldsetAdvanced = $form->get('advanced-settings');
-    $form->remove('advanced-settings');
-    echo $this->formCollection($form);
-    ?>
-</fieldset>
+<input type="hidden" name="filename" value="<?php echo $filename; ?>" />
+<input type="hidden" name="filesize" value="<?php echo $filesize; ?>" />
+<input type="hidden" name="filepath" value="<?php echo $filepath; ?>" />
+<input type="hidden" name="media_type" value="<?php echo $mediaType; ?>" />
 
-<fieldset id="advanced-fieldset" class="section">
-    <?php echo $this->formCollection($fieldsetAdvanced); ?>
-</fieldset>
+<?php echo $this->formCollection($form); ?>
 
-<fieldset id="mapping-data" class="section">
-    <table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack">
+<fieldset id="mapping-data" class="section active">
+    <?php if (empty($resourceType) || $resourceType === 'resources'): ?>
+    <div class="field required">
+        <div class="field-meta">
+            <label for="resource-type-column"><?php echo $this->translate('Resource type column'); ?></label>
+        </div>
+        <div class="inputs">
+            <select name="resource-type-column" id="resource-type-column" data-flag-name="column-resource_type" data-flag-label="<?php echo $this->translate('Resource type'); ?>" data-flag-class="resource-type" required>
+                <option value=""><?php echo $this->translate('Select below'); ?></option>
+                <?php foreach ($columns as $index => $column): ?>
+                <option value="column[<?php echo $index; ?>]"><?php echo $escapeHtml($column); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </div>
+    <?php endif; ?>
+    <div class="batch-inputs">
+        <a class="inactive button" data-sidebar-selector="#column-options" id="batch-edit-options"><?php echo $this->translate('Batch edit options'); ?></a>
+    </div>
+    <table class="batch-edit tablesaw tablesaw-stack" data-tablesaw-mode="stack">
         <thead>
             <tr>
-                <th><?php echo $translate('Column headers'); ?></th>
-                <th><?php echo $translate('Mappings'); ?></th>
-                <th><?php echo $translate('Options'); ?></th>
+                <th><input type="checkbox" class="select-all" aria-label="<?php echo $this->translate('Select all'); ?>"><?php echo $this->translate("Column"); ?></th>
+                <th><?php echo $this->translate("Mappings"); ?></th>
+                <th><?php echo $this->translate("Options"); ?></th>
             </tr>
         </thead>
         <tbody>
         <?php foreach ($columns as $index => $column): ?>
             <tr class="element mappable" data-element-id="<?php echo $index; ?>" data-column="<?php echo $escapeHtml($column); ?>">
                 <td>
+                    <input type="checkbox" name="column[<?php echo $index; ?>]" class="column-select" value="<?php echo $this->escapeHtml($column); ?>" aria-label="<?php echo $this->translate('Select column'); ?>">
                     <span class="column-header"><?php echo $escapeHtml($column); ?></span>
                     <ul class="actions">
                         <li><a href="#" class="o-icon-add sidebar-content" data-sidebar-selector="#add-mapping" aria-label="<?php echo $translate('Add mapping'); ?>" title="<?php echo $translate('Add mapping'); ?>"></a></li>
@@ -82,53 +84,26 @@ $pageTitle = isset($resourceTypeLabels[$resourceType])
                         <li class="mapping <?php echo $automaps[$index]['class']; ?>"<?php echo $automaps[$index]['special']; ?>>
                             <?php echo $translate($automaps[$index]['label']); ?>
                             <ul class="actions">
-                                <li><a aria-label="<?php echo $escapeHtml($translate('Remove mapping')); ?>" title="<?php echo $escapeHtml($translate('Remove mapping')); ?>" class="o-icon-delete remove-mapping" href="#" style="display: inline;"></a></li>
-                                <li><a aria-label="<?php echo $escapeHtml($translate('Undo remove mapping')); ?>" title="<?php echo $escapeHtml($translate('Undo option')); ?>" class="o-icon-undo restore-mapping" href="#" style="display: none;"></a></li>
+                                <li><a aria-label="<?php echo $escapeHtml($this->translate('Remove mapping')); ?>" title="<?php echo $escapeHtml($this->translate('Remove mapping')); ?>" class="o-icon-delete remove-mapping" href="#" style="display: inline;"></a></li>
                             </ul>
                             <input name="column-<?php echo $automaps[$index]['name'] . '[' . $index . ']' . ($automaps[$index]['multiple'] ? '[]' : ''); ?>" value="<?php echo $escapeHtml(is_array($value) ? json_encode($value) : $value); ?>" type="hidden" />
                         </li>
                     <?php endif; ?>
                     </ul>
                 </td>
-                <td>
-                    <ul class="options">
-                        <li class="column-multivalue option" style="display:none;"><?php echo $translate('Multivalue:'); echo "&nbsp;"; ?>
-                            <span class="column-multivalue"></span>
-                            <ul class="actions">
-                                <li>
-                                    <a aria-label="<?php echo $escapeHtml($translate('Remove option')); ?>" title="<?php echo $escapeHtml($translate('Remove option')); ?>" class="o-icon-delete remove-option" href="#" style="display: inline;"></a>
-                                </li>
-                                <li>
-                                    <a aria-label="<?php echo $escapeHtml($translate('Restore option')); ?>" title="<?php echo $escapeHtml($translate('Undo option')); ?>" class="o-icon-undo restore-option" href="#" style="display: none;"></a>
-                                </li>
-                            </ul>
-                            <input type="hidden" disabled="disabled" value="" class="column-option column-multivalue" name="column-multivalue[<?php echo $index; ?>]"></input>
+                <td class="element-options">
+                    <ul class='options'>
+                        <li class='column-import option' style='display:none;'><span class="option-label"></span>
+                            <input type='hidden' disabled='disabled' value='1' class='column-option column-url' name='column-url[<?php echo $index; ?>]'></input>
+                            <input type='hidden' disabled='disabled' value='1' class='column-option column-reference' name='column-reference[<?php echo $index; ?>]'></input>
+                        </li>
+                        <li class='column-multivalue option' style='display:none;'><?php echo $this->translate("Multivalue"); ?>
+                            <input type='hidden' disabled='disabled' value='1' class='column-option column-multivalue' name='column-multivalue[<?php echo $index; ?>]'></input>
                         </li>
 
-                        <li class="column-language option" style="display:none;"><?php echo $translate('Language:'); echo "&nbsp;"; ?>
-                            <span class="column-language"></span>
-                            <ul class="actions">
-                                <li>
-                                    <a aria-label="<?php echo $escapeHtml($translate('Remove option')); ?>" title="<?php echo $escapeHtml($translate('Remove option')); ?>" class="o-icon-delete remove-option remove-column-language" href="#" style="display: inline;"></a>
-                                </li>
-                                <li>
-                                    <a aria-label="<?php echo $escapeHtml($translate('Restore option')); ?>" title="<?php echo $escapeHtml($translate('Undo option')); ?>" class="o-icon-undo restore-option" href="#" style="display: none;"></a>
-                                </li>
-                            </ul>
-                            <input type="hidden" disabled="disabled" value="" class="column-option column-language" name='column-language[<?php echo $index; ?>]'></input>
-                        </li>
-
-                        <li class="column-import option" style="display:none;"><span class="option-label"></span>
-                            <ul class="actions">
-                                <li>
-                                    <a aria-label="<?php echo $escapeHtml($translate('Remove option')); ?>" title="<?php echo $escapeHtml($translate('Remove option')); ?>" class="o-icon-delete remove-option" href="#" style="display: inline;"></a>
-                                </li>
-                                <li>
-                                    <a aria-label="<?php echo $escapeHtml($translate('Restore option')); ?>" title="<?php echo $escapeHtml($translate('Undo option')); ?>" class="o-icon-undo restore-option" href="#" style="display: none;"></a>
-                                </li>
-                            </ul>
-                            <input type="hidden" disabled="disabled" value="1" class="column-option column-url" name="column-url[<?php echo $index; ?>]"></input>
-                            <input type="hidden" disabled="disabled" value="1" class="column-option column-reference" name="column-reference[<?php echo $index; ?>]"></input>
+                        <li class='column-language option' style='display:none;'><?php echo $this->translate("Language:"); echo"&nbsp;"; ?>
+                            <span class='column-language'></span>
+                            <input type='hidden' disabled='disabled' value='' class='column-option column-language' name='column-language[<?php echo $index; ?>]'></input>
                         </li>
                     </ul>
                 </td>
