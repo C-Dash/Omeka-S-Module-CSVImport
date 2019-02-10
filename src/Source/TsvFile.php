@@ -1,8 +1,6 @@
 <?php
 namespace CSVImport\Source;
 
-use SplFileObject;
-
 /**
  * @link https://www.iana.org/assignments/media-types/text/tab-separated-values
  */
