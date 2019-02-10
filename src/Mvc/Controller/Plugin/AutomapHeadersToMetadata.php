@@ -1,24 +1,14 @@
 <?php
 namespace CSVImport\Mvc\Controller\Plugin;
 
-use Omeka\Api\Manager as ApiManager;
 use Zend\Mvc\Controller\Plugin\AbstractPlugin;
-use Zend\I18n\Translator\TranslatorAwareInterface;
-use Zend\I18n\Translator\TranslatorAwareTrait;
 
-class AutomapHeadersToMetadata extends AbstractPlugin implements TranslatorAwareInterface
+class AutomapHeadersToMetadata extends AbstractPlugin
 {
-    use TranslatorAwareTrait;
-
     /**
      * @var array
      */
     protected $configCsvImport;
-
-    /**
-     * @var ApiManager
-     */
-    protected $api;
 
     /**
      * @var array
@@ -38,11 +28,6 @@ class AutomapHeadersToMetadata extends AbstractPlugin implements TranslatorAware
     public function __invoke(array $headers, $resourceType = null, array $options = null)
     {
         $automaps = [];
-
-        // Set the default automapping from the config if not set.
-        if (!isset($options['automap_list'])) {
-            $options['automap_list'] = $this->configCsvImport['user_settings']['csvimport_automap_user_list'];
-        }
 
         $this->options = $options;
 
@@ -66,8 +51,8 @@ class AutomapHeadersToMetadata extends AbstractPlugin implements TranslatorAware
             array_keys($propertyLists['labels']));
         $lists['lower_labels'] = array_map('strtolower', $lists['labels']);
 
-        $automapByLabel = !empty($options['automap_by_label']);
-        if ($automapByLabel) {
+        $checkNamesAlone = !empty($options['check_names_alone']);
+        if ($checkNamesAlone) {
             $lists['local_names'] = array_map(function ($v) {
                 $w = explode(':', $v);
                 return end($w);
@@ -80,8 +65,6 @@ class AutomapHeadersToMetadata extends AbstractPlugin implements TranslatorAware
             $lists['lower_local_labels'] = array_map('strtolower', $lists['local_labels']);
         }
 
-        $mappings = isset($options['mappings']) ? $options['mappings'] : [];
-
         foreach ($headers as $index => $header) {
             $lowerHeader = strtolower($header);
             foreach ($automapLists as $listName => $list) {
@@ -93,21 +76,28 @@ class AutomapHeadersToMetadata extends AbstractPlugin implements TranslatorAware
                 }
             }
 
-            // Check strict term name, like "dcterms:title", sensitively then
-            // insensitively, then term label like "Dublin Core : Title"
-            // sensitively then insensitively too. Because all the lists
-            // contains the same keys in the same order, the process can be done
-            // in one step.
-            if (in_array(\CSVImport\Mapping\PropertyMapping::class, $mappings)) {
-                foreach ($lists as $listName => $list) {
-                    $toSearch = strpos($listName, 'lower_') === 0 ? $lowerHeader : $header;
-                    $found = array_search($toSearch, $list, true);
-                    if ($found) {
-                        $property = $propertyLists['names'][$found];
-                        $automaps[$index] = $property;
-                        continue 2;
+            switch ($resourceType) {
+                case 'item_sets':
+                case 'items':
+                case 'media':
+                case 'resources':
+                    // Check strict term name, like "dcterms:title", sensitively
+                    // then insensitively, then term label like "Dublin Core : Title"
+                    // sensitively then insensitively too. Because all the lists
+                    // contains the same keys in the same order, the process can
+                    // be done in one step.
+                    foreach ($lists as $listName => $list) {
+                        $toSearch = strpos($listName, 'lower_') === 0 ? $lowerHeader : $header;
+                        $found = array_search($toSearch, $list, true);
+                        if ($found) {
+                            $property = $propertyLists['names'][$found];
+                            $automaps[$index] = $property;
+                            continue 3;
+                        }
                     }
-                }
+                    break;
+                case 'users':
+                    break;
             }
         }
 
@@ -116,8 +106,6 @@ class AutomapHeadersToMetadata extends AbstractPlugin implements TranslatorAware
 
     /**
      * Prepare automaps to be used in a form, and filter it with resource type.
-     *
-     * @todo Automapping are not filtered by resource type currently.
      *
      * @param array $automaps
      * @param string $resourceType
@@ -133,7 +121,7 @@ class AutomapHeadersToMetadata extends AbstractPlugin implements TranslatorAware
                     $value = [];
                     $value['name'] = 'property';
                     $value['value'] = $automap->id();
-                    $value['label'] = $this->getTranslator()->translate($automap->label());
+                    $value['label'] = $controller->translate($automap->label());
                     $value['class'] = 'property';
                     $value['special'] = ' data-property-id="' . $automap->id(). '"';
                     $value['multiple'] = true;
@@ -157,7 +145,7 @@ class AutomapHeadersToMetadata extends AbstractPlugin implements TranslatorAware
     protected function listTerms()
     {
         $result = [];
-        $vocabularies = $this->api->search('vocabularies')->getContent();
+        $vocabularies = $this->getController()->api()->search('vocabularies')->getContent();
         foreach ($vocabularies as $vocabulary) {
             $properties = $vocabulary->properties();
             if (empty($properties)) {
@@ -167,9 +155,9 @@ class AutomapHeadersToMetadata extends AbstractPlugin implements TranslatorAware
                 $result['names'][$property->term()] = $property;
                 $name = $vocabulary->label() .  ':' . $property->label();
                 if (isset($result['labels'][$name])) {
-                    $result['labels'][$vocabulary->label() . ':' . $property->label() . ' (#' . $property->id() . ')'] = $property;
+                    $result['labels'][$vocabulary->label() .  ':' . $property->label() . ' (#' . $property->id() . ')'] = $property;
                 } else {
-                    $result['labels'][$vocabulary->label() . ':' . $property->label()] = $property;
+                    $result['labels'][$vocabulary->label() .  ':' . $property->label()] = $property;
                 }
             }
         }
@@ -198,10 +186,5 @@ class AutomapHeadersToMetadata extends AbstractPlugin implements TranslatorAware
     public function setConfigCsvImport(array $configCsvImport)
     {
         $this->configCsvImport = $configCsvImport;
-    }
-
-    public function setApiManager(ApiManager $apiManager)
-    {
-        $this->api = $apiManager;
     }
 }

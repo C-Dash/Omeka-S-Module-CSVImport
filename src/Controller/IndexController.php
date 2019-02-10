@@ -3,8 +3,8 @@ namespace CSVImport\Controller;
 
 use CSVImport\Form\ImportForm;
 use CSVImport\Form\MappingForm;
-use CSVImport\Job\Import;
 use CSVImport\Source\SourceInterface;
+use CSVImport\Job\Import;
 use finfo;
 use Omeka\Media\Ingester\Manager;
 use Omeka\Service\Exception\ConfigException;
@@ -50,20 +50,19 @@ class IndexController extends AbstractActionController
     public function indexAction()
     {
         $view = new ViewModel;
-
-        /** @var \CSVImport\Form\ImportForm $form */
         $form = $this->getForm(ImportForm::class);
         $view->form = $form;
+        return $view;
+    }
 
-        /** @var \Zend\Session\Storage\SessionArrayStorage $session */
-        $sessionManager = \Zend\Session\Container::getDefaultManager();
-        $session = $sessionManager->getStorage();
-        $session->clear('CSVImport');
+    public function mapAction()
+    {
+        $view = new ViewModel;
+        $request = $this->getRequest();
 
-        $user = $this->identity();
-        /** @var \Omeka\Settings\UserSettings $userSettings */
-        $userSettings = $this->userSettings();
-        $userSettings->setTargetId($user->getId());
+        if (!$request->isPost()) {
+            return $this->redirect()->toRoute('admin/csvimport');
+        }
 
         $files = $request->getFiles()->toArray();
         $post = $this->params()->fromPost();
@@ -211,10 +210,6 @@ class IndexController extends AbstractActionController
      */
     protected function getSource(array $fileData)
     {
-        if (empty($fileData['tmp_name'])) {
-            return;
-        }
-
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $mediaType = $finfo->file($fileData['tmp_name']);
 
@@ -231,7 +226,7 @@ class IndexController extends AbstractActionController
             }
         }
 
-        $sources = $this->config['csvimport']['sources'];
+        $sources = $this->config['csv_import']['sources'];
         if (!isset($sources[$mediaType])) {
             return;
         }
@@ -253,48 +248,20 @@ class IndexController extends AbstractActionController
         // the mapping form. The default order is set in this module config too,
         // before Zend merge.
         $config = include dirname(dirname(__DIR__)) . '/config/module.config.php';
-        $defaultOrder = $config['csvimport']['mappings'];
-        $mappings = $this->config['csvimport']['mappings'];
-
+        $defaultOrder = $config['csv_import']['mappings'];
+        $mappings = $this->config['csv_import']['mappings'];
         if (isset($defaultOrder[$resourceType])) {
             $mappingClasses = array_values(array_unique(array_merge(
-                $defaultOrder[$resourceType]['mappings'], $mappings[$resourceType]['mappings']
+                $defaultOrder[$resourceType], $mappings[$resourceType]
             )));
         } else {
-            $mappingClasses = $mappings[$resourceType]['mappings'];
+            $mappingClasses = $mappings[$resourceType];
         }
         $mappings = [];
         foreach ($mappingClasses as $mappingClass) {
             $mappings[] = new $mappingClass();
         }
         return $mappings;
-    }
-
-    /**
-     * Helper to clean posted args after import form.
-     *
-     * @todo Mix with check in Import and make it available for external query.
-     *
-     * @param array $post
-     * @return array
-     */
-    protected function cleanArgsImport(array $post)
-    {
-        $args = $post;
-        // TODO Move to the source class.
-        unset($args['delimiter']);
-        unset($args['enclosure']);
-        switch ($post['media_type']) {
-            case 'text/csv':
-                $args['delimiter'] = $this->getForm(ImportForm::class)->extractParameter($post['delimiter']);
-                $args['enclosure'] = $this->getForm(ImportForm::class)->extractParameter($post['enclosure']);
-                $args['escape'] = \CSVImport\Source\CsvFile::DEFAULT_ESCAPE;
-                break;
-            case 'text/tab-separated-values':
-                // Nothing to do.
-                break;
-        }
-        return $args;
     }
 
     /**
@@ -307,8 +274,7 @@ class IndexController extends AbstractActionController
      */
     protected function cleanArgs(array $post)
     {
-        $args = $post['advanced-settings'] + $post;
-        unset($args['advanced-settings']);
+        $args = $post;
 
         unset($args['csrf']);
 
@@ -330,7 +296,9 @@ class IndexController extends AbstractActionController
         }
 
         // Set arguments as integer.
-        $args['rows_by_batch'] = empty($args['rows_by_batch']) ? 0 : (int) $args['rows_by_batch'];
+        if (!empty($args['rows_by_batch'])) {
+            $args['rows_by_batch'] = (int) $args['rows_by_batch'];
+        }
 
         // Set arguments as boolean.
         if (array_key_exists('automap_check_names_alone', $args)) {
@@ -370,10 +338,20 @@ class IndexController extends AbstractActionController
             $args['multivalue_separator'] = ',';
         }
 
-        // Set default automap by label if not set, for example for users.
-        if (!array_key_exists('automap_by_label', $args)) {
-            $args['automap_by_label'] = false;
+        // TODO Move to the source class.
+        unset($args['delimiter']);
+        unset($args['enclosure']);
+        switch ($post['media_type']) {
+            case 'text/csv':
+                $args['delimiter'] = $this->getForm(ImportForm::class)->extractParameter($post['delimiter']);
+                $args['enclosure'] = $this->getForm(ImportForm::class)->extractParameter($post['enclosure']);
+                $args['escape'] = \CSVImport\Source\CsvFile::DEFAULT_ESCAPE;
+                break;
+            case 'text/tab-separated-values':
+                // Nothing to do.
+                break;
         }
+
 
         // Set a default owner for a creation.
         if (empty($args['o:owner']['o:id']) && (empty($args['action']) || $args['action'] === Import::ACTION_CREATE)) {
@@ -381,20 +359,11 @@ class IndexController extends AbstractActionController
         }
 
         // Remove useless input fields from sidebars.
-        unset($args['csrf']);
-        unset($args['automap_by_label']);
+        unset($args['value-language']);
         unset($args['column-resource_property']);
         unset($args['column-item_set_property']);
         unset($args['column-item_property']);
         unset($args['column-media_property']);
-        unset($args['multivalue_by_default']);
-        unset($args['language_by_default']);
-        unset($args['value-language']);
-        unset($args['multivalue']);
-        unset($args['resource_data']);
-        unset($args['media-source']);
-        unset($args['column-import']);
-        unset($args['data_resource_type_select']);
 
         return $args;
     }

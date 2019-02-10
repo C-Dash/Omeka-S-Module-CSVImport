@@ -26,14 +26,13 @@ return [
     ],
     'form_elements' => [
         'factories' => [
-            Form\ImportForm::class => Service\Form\ImportFormFactory::class,
-            Form\MappingForm::class => Service\Form\MappingFormFactory::class,
-            Form\ResourceSidebarFieldset::class => Service\Form\ResourceSidebarFieldsetFactory::class,
+            'CSVImport\Form\ImportForm' => Service\Form\ImportFormFactory::class,
+            'CSVImport\Form\MappingForm' => Service\Form\MappingFormFactory::class,
         ],
     ],
     'controllers' => [
         'factories' => [
-            Controller\IndexController::class => Service\Controller\IndexControllerFactory::class,
+            'CSVImport\Controller\Index' => Service\Controller\IndexControllerFactory::class,
         ],
     ],
     'controller_plugins' => [
@@ -56,16 +55,38 @@ return [
             'admin' => [
                 'child_routes' => [
                     'csvimport' => [
-                        'type' => \Zend\Router\Http\Segment::class,
+                        'type' => 'Literal',
                         'options' => [
-                            'route' => '/csvimport[/:action]',
-                            'constraints' => [
-                                'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
-                            ],
+                            'route' => '/csvimport',
                             'defaults' => [
                                 '__NAMESPACE__' => 'CSVImport\Controller',
-                                'controller' => Controller\IndexController::class,
+                                'controller' => 'Index',
                                 'action' => 'index',
+                            ],
+                        ],
+                        'may_terminate' => true,
+                        'child_routes' => [
+                            'past-imports' => [
+                                'type' => 'Literal',
+                                'options' => [
+                                    'route' => '/past-imports',
+                                    'defaults' => [
+                                        '__NAMESPACE__' => 'CSVImport\Controller',
+                                        'controller' => 'Index',
+                                        'action' => 'past-imports',
+                                    ],
+                                ],
+                            ],
+                            'map' => [
+                                'type' => 'Literal',
+                                'options' => [
+                                    'route' => '/map',
+                                    'defaults' => [
+                                        '__NAMESPACE__' => 'CSVImport\Controller',
+                                        'controller' => 'Index',
+                                        'action' => 'map',
+                                    ],
+                                ],
                             ],
                         ],
                     ],
@@ -78,22 +99,25 @@ return [
             [
                 'label' => 'CSV Import',
                 'route' => 'admin/csvimport',
+                'resource' => 'CSVImport\Controller\Index',
                 'pages' => [
                     [
                         'label' => 'Import', // @translate
                         'route' => 'admin/csvimport',
-                        'action' => 'index',
+                        'resource' => 'CSVImport\Controller\Index',
                     ],
                     [
                         'label' => 'Import', // @translate
-                        'route' => 'admin/csvimport',
-                        'action' => 'map',
+                        'route' => 'admin/csvimport/map',
+                        'resource' => 'CSVImport\Controller\Index',
                         'visible' => false,
                     ],
                     [
                         'label' => 'Past Imports', // @translate
-                        'route' => 'admin/csvimport',
+                        'route' => 'admin/csvimport/past-imports',
+                        'controller' => 'Index',
                         'action' => 'past-imports',
+                        'resource' => 'CSVImport\Controller\Index',
                     ],
                 ],
             ],
@@ -112,7 +136,7 @@ return [
     'js_translate_strings' => [
         'Remove mapping', // @translate
     ],
-    'csvimport' => [
+    'csv_import' => [
         'sources' => [
             'application/vnd.oasis.opendocument.spreadsheet' => Source\OpenDocumentSpreadsheet::class,
             'text/csv' => Source\CsvFile::class,
@@ -120,38 +144,26 @@ return [
         ],
         'mappings' => [
             'items' => [
-                'label' => 'Items', // @translate
-                'mappings' => [
-                    Mapping\ItemMapping::class,
-                    Mapping\PropertyMapping::class,
-                    Mapping\MediaSourceMapping::class,
-                ],
+                Mapping\ItemMapping::class,
+                Mapping\PropertyMapping::class,
+                Mapping\MediaSourceMapping::class,
             ],
             'item_sets' => [
                 Mapping\ItemSetMapping::class,
                 Mapping\PropertyMapping::class,
             ],
             'media' => [
-                'label' => 'Media', // @translate
-                'mappings' => [
-                    Mapping\MediaMapping::class,
-                    Mapping\PropertyMapping::class,
-                    Mapping\MediaSourceMapping::class,
-                ],
+                Mapping\MediaMapping::class,
+                Mapping\PropertyMapping::class,
+                Mapping\MediaSourceMapping::class,
             ],
             'resources' => [
-                'label' => 'Multiple resources (items, item sets, media…)', // @translate
-                'mappings' => [
-                    Mapping\ResourceMapping::class,
-                    Mapping\PropertyMapping::class,
-                    Mapping\MediaSourceMapping::class,
-                ],
+                Mapping\ResourceMapping::class,
+                Mapping\PropertyMapping::class,
+                Mapping\MediaSourceMapping::class,
             ],
             'users' => [
-                'label' => 'Users', // @translate
-                'mappings' => [
-                    Mapping\UserMapping::class,
-                ],
+                Mapping\UserMapping::class,
             ],
         ],
         'media_ingester_adapter' => [

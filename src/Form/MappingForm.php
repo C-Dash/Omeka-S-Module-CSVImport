@@ -6,147 +6,45 @@ use Omeka\Form\Element\ItemSetSelect;
 use Omeka\Form\Element\PropertySelect;
 use Omeka\Form\Element\ResourceSelect;
 use Omeka\Form\Element\ResourceClassSelect;
-use Omeka\Permissions\Acl;
-use Zend\EventManager\Event;
-use Zend\EventManager\EventManagerAwareTrait;
-use Zend\Form\Element;
-use Zend\Form\Fieldset;
 use Zend\Form\Form;
-use Zend\View\Helper\Url;
 
 class MappingForm extends Form
 {
-    use EventManagerAwareTrait;
-
-    protected $inputFilter;
-
-    /**
-     * @var string
-     */
-    protected $resourceType;
-
-    /**
-     * @var Url
-     */
-    protected $urlHelper;
-
-    /**
-     * @var Acl
-     */
-    protected $acl;
+    protected $serviceLocator;
 
     public function init()
     {
-        $acl = $this->getAcl();
-
-        $this->inputFilter = $this->getInputFilter();
-        $this->resourceType = $this->getOption('resource_type');
-
-        $this->addCommonElements();
-
-        switch ($this->resourceType) {
-            case 'resources':
-                $this->addResourceElements();
-                // No rule for resources, so use item.
-                if ($acl->userIsAllowed(\Omeka\Entity\Item::class, 'change-owner')) {
-                    $this->addOwnerElement();
-                }
-                $this->addResourceGenericElements();
-                $this->addProcessElements();
-                $this->addAdvancedElements();
-                break;
-            case 'item_sets':
-                $this->addResourceElements();
-                if ($acl->userIsAllowed(\Omeka\Entity\ItemSet::class, 'change-owner')) {
-                    $this->addOwnerElement();
-                }
-                $this->addItemSetElements();
-                $this->addProcessElements();
-                $this->addAdvancedElements();
-                break;
-            case 'items':
-                $this->addResourceElements();
-                if ($acl->userIsAllowed(\Omeka\Entity\Item::class, 'change-owner')) {
-                    $this->addOwnerElement();
-                }
-                $this->addItemElements();
-                $this->addProcessElements();
-                $this->addAdvancedElements();
-                break;
-            case 'media':
-                $this->addResourceElements();
-                if ($acl->userIsAllowed(\Omeka\Entity\Media::class, 'change-owner')) {
-                    $this->addOwnerElement();
-                }
-                $this->addMediaElements();
-                $this->addProcessElements();
-                $this->addAdvancedElements();
-                break;
-            case 'users':
-                break;
-        }
-
-        $addEvent = new Event('form.add_elements', $this);
-        $this->getEventManager()->triggerEvent($addEvent);
-        $event = new Event('form.add_input_filters', $this, ['inputFilter' => $this->inputFilter]);
-        $this->getEventManager()->triggerEvent($event);
-    }
-
-    public function addCommonElements()
-    {
-        $this->add([
-            'name' => 'comment',
-            'type' => Element\Textarea::class,
-            'options' => [
-                'label' => 'Comment', // @translate
-                'info' => 'A note about the purpose or source of this import', // @translate
-            ],
-            'attributes' => [
-                'id' => 'comment',
-                'class' => 'input-body',
-            ],
-        ]);
-    }
-
-    public function addResourceElements()
-    {
-        $urlHelper = $this->getUrlHelper();
+        $resourceType = $this->getOption('resource_type');
+        $serviceLocator = $this->getServiceLocator();
+        $userSettings = $serviceLocator->get('Omeka\Settings\User');
+        $config = $serviceLocator->get('Config');
+        $default = $config['csv_import']['user_settings'];
+        $acl = $serviceLocator->get('Omeka\Acl');
 
         $this->add([
-            'name' => 'o:resource_template[o:id]',
-            'type' => ResourceSelect::class,
-            'options' => [
-                'label' => 'Resource template', // @translate
-                'info' => 'A pre-defined template for resource creation', // @translate
-                'empty_option' => '',
-                'resource_value_options' => [
-                    'resource' => 'resource_templates',
-                    'query' => [],
-                    'option_text_callback' => function ($resourceTemplate) {
-                        return $resourceTemplate->label();
-                    },
-                ],
-            ],
+            'name' => 'resource_type',
+            'type' => 'hidden',
             'attributes' => [
-                'id' => 'resource-template-select',
-                'class' => 'chosen-select',
-                'data-placeholder' => 'Select a template', // @translate
-                'data-api-base-url' => $urlHelper('api/default', ['resource' => 'resource_templates']),
+                'value' => $resourceType,
+                'required' => true,
             ],
         ]);
 
         $this->add([
-            'name' => 'o:resource_class[o:id]',
-            'type' => ResourceClassSelect::class,
-            'options' => [
-                'label' => 'Class', // @translate
-                'info' => 'A type for the resource. Different types have different default properties attached to them.', // @translate
-                'empty_option' => '',
-            ],
+            'name' => 'delimiter',
+            'type' => 'hidden',
             'attributes' => [
-                'id' => 'resource-class-select',
-                'class' => 'chosen-select',
-                'data-placeholder' => 'Select a class', // @translate
+                'value' => $this->getOption('delimiter'),
+                'required' => true,
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'enclosure',
+            'type' => 'hidden',
+            'attributes' => [
+                'value' => $this->getOption('enclosure'),
+                'required' => true,
             ],
         ]);
 
@@ -158,14 +56,6 @@ class MappingForm extends Form
             ]
         ]);
 
-        $this->inputFilter->add([
-            'name' => 'o:owner[o:id]',
-            'required' => false,
-        ]);
-    }
-
-    public function addItemSetElements()
-    {
         $this->add([
             'name' => 'automap_check_names_alone',
             'type' => 'hidden',
@@ -183,11 +73,6 @@ class MappingForm extends Form
                 'class' => 'section',
             ]
         ]);
-        $this->inputFilter->add([
-            'name' => 'o:item_set',
-            'required' => false,
-        ]);
-    }
 
         $basicSettingsFieldset = $this->get('basic-settings');
 
@@ -537,13 +422,13 @@ class MappingForm extends Form
         }
     }
 
-    public function setAcl(Acl $acl)
+    public function setServiceLocator($serviceLocator)
     {
-        $this->acl = $acl;
+        $this->serviceLocator = $serviceLocator;
     }
 
-    protected function getAcl()
+    public function getServiceLocator()
     {
-        return $this->acl;
+        return $this->serviceLocator;
     }
 }

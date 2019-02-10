@@ -36,9 +36,9 @@ use Zend\Mvc\Controller\Plugin\AbstractPlugin;
 class FindResourcesFromIdentifiers extends AbstractPlugin
 {
     /**
-     * @var Connection
+     * @var Connexion
      */
-    protected $connection;
+    protected $connexion;
 
     /**
      * @var ApiManager
@@ -46,12 +46,11 @@ class FindResourcesFromIdentifiers extends AbstractPlugin
     protected $api;
 
     /**
-     * @param Connection $connection
-     * @param ApiManager $apiManager
+     * @param Connection $connexion
      */
-    public function __construct(Connection $connection, ApiManager $apiManager)
+    public function __construct(Connection $connexion, ApiManager $apiManager)
     {
-        $this->connection = $connection;
+        $this->connexion = $connexion;
         $this->api = $apiManager;
     }
 
@@ -151,7 +150,7 @@ class FindResourcesFromIdentifiers extends AbstractPlugin
     protected function findResourcesFromInternalIds($identifiers, $resourceType)
     {
         // The api manager doesn't manage this type of search.
-        $conn = $this->connection;
+        $conn = $this->connexion;
         $identifiers = array_map('intval', $identifiers);
         $quotedIdentifiers = implode(',', $identifiers);
         $qb = $conn->createQueryBuilder()
@@ -177,7 +176,7 @@ class FindResourcesFromIdentifiers extends AbstractPlugin
     protected function findResourcesFromPropertyIds($identifiers, $identifierPropertyId, $resourceType)
     {
         // The api manager doesn't manage this type of search.
-        $conn = $this->connection;
+        $conn = $this->connexion;
 
         // Search in multiple resource types in one time.
         $quotedIdentifiers = array_map([$conn, 'quote'], $identifiers);
@@ -209,7 +208,7 @@ class FindResourcesFromIdentifiers extends AbstractPlugin
     protected function findResourcesFromMediaSource($identifiers, $ingesterName, $itemId = null)
     {
         // The api manager doesn't manage this type of search.
-        $conn = $this->connection;
+        $conn = $this->connexion;
 
         // Search in multiple resource types in one time.
         $quotedIdentifiers = array_map([$conn, 'quote'], $identifiers);

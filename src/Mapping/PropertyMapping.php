@@ -45,8 +45,11 @@ class PropertyMapping extends AbstractMapping
             $languageMap = $this->args['column-language'];
         }
 
-        $multivalueMap = isset($this->args['column-multivalue']) ? $this->args['column-multivalue'] : [];
+        // Get default option values.
+        $globalLanguage = isset($this->args['global_language']) ? $this->args['global_language'] : '';
 
+        $multivalueMap = isset($this->args['column-multivalue']) ? $this->args['column-multivalue'] : [];
+        $multivalueSeparator = $this->args['multivalue_separator'];
         foreach ($row as $index => $values) {
             if (isset($propertyMap[$index])) {
                 // Consider 'literal' as the default type.
@@ -58,11 +61,8 @@ class PropertyMapping extends AbstractMapping
                 }
 
                 foreach ($propertyMap[$index] as $propertyTerm => $propertyId) {
-                    if (array_key_exists($index, $multivalueMap) && strlen($multivalueMap[$index])) {
-                        $values = explode($multivalueMap[$index], $values);
-                        $values = array_map(function ($v) {
-                            return trim($v, "\t\n\r   ");
-                        }, $values);
+                    if (empty($multivalueMap[$index])) {
+                        $values = [$values];
                     } else {
 
                         $values = explode($multivalueSeparator, $values);
@@ -93,8 +93,11 @@ class PropertyMapping extends AbstractMapping
                                     'property_id' => $propertyId,
                                     'type' => $type,
                                 ];
-                                if (!empty($languageMap[$index])) {
-                                    $literalPropertyJson['@language'] = $languageMap[$index];
+                                if ($globalLanguage !== '') {
+                                    $literalPropertyJson['@language'] = $globalLanguage;
+                                }
+                                if (isset($languageSettings[$index])) {
+                                    $literalPropertyJson['@language'] = $languageSettings[$index];
                                 }
                                 $data[$propertyTerm][] = $literalPropertyJson;
                                 break;

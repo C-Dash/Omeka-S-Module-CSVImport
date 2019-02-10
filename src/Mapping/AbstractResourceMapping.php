@@ -50,12 +50,10 @@ abstract class AbstractResourceMapping extends AbstractMapping
         $this->processGlobalArgs();
 
         $multivalueMap = isset($this->args['column-multivalue']) ? $this->args['column-multivalue'] : [];
+        $multivalueSeparator = $this->args['multivalue_separator'];
         foreach ($row as $index => $values) {
-            if (array_key_exists($index, $multivalueMap) && strlen($multivalueMap[$index])) {
-                $values = explode($multivalueMap[$index], $values);
-                $values = array_map(function ($v) {
-                    return trim($v, "\t\n\r   ");
-                }, $values);
+            if (empty($multivalueMap[$index])) {
+                $values = [$values];
             } else {
                 $values = explode($multivalueSeparator, $values);
                 $values = array_map(function ($v) { return trim($v); }, $values);
@@ -96,7 +94,7 @@ abstract class AbstractResourceMapping extends AbstractMapping
             $data['o:resource_template'] = ['o:id' => (int) $this->args['o:resource_template']['o:id']];
         }
         if (!empty($this->args['o:resource_class']['o:id'])) {
-            $data['o:resource_class'] = ['o:id' => (int) $this->args['o:resource_class']['o:id']];
+            $data['o:resource_class'] = ['o:id' => (int) $this->args['o:resource_class']['o:id']];;
         }
         if (!empty($this->args['o:owner']['o:id'])) {
             $data['o:owner'] = ['o:id' => (int) $this->args['o:owner']['o:id']];
@@ -223,14 +221,6 @@ abstract class AbstractResourceMapping extends AbstractMapping
             foreach ($values as $identifier) {
                 $resourceId = $findResourceFromIdentifier($identifier, $identifierProperty, $resourceType);
                 if ($resourceId) {
-                    // Check if the item is already linked to the item set to
-                    // avoid to assign the same item set two times and to
-                    // avoid a crash on old versions of Omeka (< 1.2).
-                    foreach ($data['o:item_set'] as $itemSet) {
-                        if ($itemSet['o:id'] == $resourceId) {
-                            continue 2;
-                        }
-                    }
                     $data['o:item_set'][] = ['o:id' => $resourceId];
                 } else {
                     $this->logger->err(new Message('"%s" (%s) is not a valid item set.', // @translate
@@ -316,7 +306,7 @@ abstract class AbstractResourceMapping extends AbstractMapping
         $response = $this->api->search('resource_classes', ['term' => $term]);
         $content = $response->getContent();
         if (empty($content)) {
-            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate
+            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate;
                 $term);
             $this->logger->err($message);
             $this->setHasErr(true);
@@ -325,7 +315,7 @@ abstract class AbstractResourceMapping extends AbstractMapping
         $class = $content[0];
         $classTerm = $class->term();
         if (strtolower($term) != strtolower($classTerm)) {
-            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate
+            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate;
                 $term);
             $this->logger->err($message);
             $this->setHasErr(true);

@@ -1,7 +1,5 @@
 <?php
-/** @var \CSVImport\Form\MappingForm $form */
 $form->prepare();
-$translate = $this->plugin('translate');
 $escapeHtml = $this->plugin('escapeHtml');
 $this->htmlElement('body')->appendAttribute('class', 'no-section-hashes');
 $this->headStyle()->appendStyle('.inputs input.value-language.active[type="text"] { background-color: #fff; padding: 0 5px; display: inherit; }');
@@ -16,14 +14,14 @@ $resourceTypeLabels = [
     'users' => $this->translate('users'),
 ];
 $pageTitle = isset($resourceTypeLabels[$resourceType])
-    ? sprintf($translate('Import settings for %s'), $resourceTypeLabels[$resourceType])
-    : $translate('Import settings');
+    ? sprintf($this->translate('Import settings for %s'), $resourceTypeLabels[$resourceType])
+    : $this->translate('Import settings');
 ?>
-<?php echo $this->pageTitle($pageTitle, 1, $translate('CSV Import')); ?>
+<?php echo $this->pageTitle($pageTitle, 1, $this->translate('CSV Import')); ?>
 
 <?php echo $this->form()->openTag($form); ?>
 <fieldset id='page-actions'>
-    <button type="submit"><?php echo $translate('Import'); ?></button>
+    <button type="submit"><?php echo $this->translate('Import'); ?></button>
 </fieldset>
 <nav class="section-nav">
     <ul>
@@ -67,14 +65,14 @@ $pageTitle = isset($resourceTypeLabels[$resourceType])
             </tr>
         </thead>
         <tbody>
-        <?php foreach ($columns as $index => $column): ?>
+        <?php foreach ($columns as $index=>$column): ?>
             <tr class="element mappable" data-element-id="<?php echo $index; ?>" data-column="<?php echo $escapeHtml($column); ?>">
                 <td>
                     <input type="checkbox" name="column[<?php echo $index; ?>]" class="column-select" value="<?php echo $this->escapeHtml($column); ?>" aria-label="<?php echo $this->translate('Select column'); ?>">
                     <span class="column-header"><?php echo $escapeHtml($column); ?></span>
                     <ul class="actions">
-                        <li><a href="#" class="o-icon-add sidebar-content" data-sidebar-selector="#add-mapping" aria-label="<?php echo $translate('Add mapping'); ?>" title="<?php echo $translate('Add mapping'); ?>"></a></li>
-                        <li><a href="#" class="o-icon-configure sidebar-content" aria-label="<?php echo $translate('Configure'); ?>" title="<?php echo $translate('Configure'); ?>" data-sidebar-selector="#column-options"></a></li>
+                        <li><a href="#" class="o-icon-add sidebar-content" data-sidebar-selector="#add-mapping" aria-label="<?php echo $this->translate('Add mapping'); ?>" title="<?php echo $this->translate('Add mapping'); ?>"></a></li>
+                        <li><a href="#" class="o-icon-configure sidebar-content" aria-label="<?php echo $this->translate('Configure'); ?>" title="<?php echo $this->translate('Configure'); ?>" data-sidebar-selector="#column-options"></a></li>
                     </ul>
                 </td>
                 <td class="mapping element">
@@ -82,7 +80,7 @@ $pageTitle = isset($resourceTypeLabels[$resourceType])
                     <?php if (!empty($automaps[$index])): ?>
                         <?php $value = $automaps[$index]['value']; ?>
                         <li class="mapping <?php echo $automaps[$index]['class']; ?>"<?php echo $automaps[$index]['special']; ?>>
-                            <?php echo $translate($automaps[$index]['label']); ?>
+                            <?php echo $this->translate($automaps[$index]['label']); ?>
                             <ul class="actions">
                                 <li><a aria-label="<?php echo $escapeHtml($this->translate('Remove mapping')); ?>" title="<?php echo $escapeHtml($this->translate('Remove mapping')); ?>" class="o-icon-delete remove-mapping" href="#" style="display: inline;"></a></li>
                             </ul>
@@ -111,38 +109,6 @@ $pageTitle = isset($resourceTypeLabels[$resourceType])
             <?php endforeach; ?>
         </tbody>
     </table>
-    <div class="field">
-        <div class="field-meta">
-            <?php echo $this->formLabel($elementsMap['multivalue_separator']); ?>
-        </div>
-        <div class="inputs">
-            <?php echo $this->formText($elementsMap['multivalue_separator']); ?>
-        </div>
-    </div>
-    <div class="field">
-        <div class="field-meta">
-            <?php echo $this->formLabel($elementsMap['multivalue_by_default']); ?>
-        </div>
-        <div class="inputs">
-            <?php echo $this->formCheckbox($elementsMap['multivalue_by_default']); ?>
-        </div>
-    </div>
-    <div class="field">
-        <div class="field-meta">
-            <?php echo $this->formLabel($elementsMap['language']); ?>
-        </div>
-        <div class="inputs">
-            <?php echo $this->formText($elementsMap['language']); ?>
-        </div>
-    </div>
-    <div class="field">
-        <div class="field-meta">
-            <?php echo $this->formLabel($elementsMap['language_by_default']); ?>
-        </div>
-        <div class="inputs">
-            <?php echo $this->formCheckbox($elementsMap['language_by_default']); ?>
-        </div>
-    </div>
     <?php echo $this->partial('common/mapping-sidebar'); ?>
     <?php echo $this->partial('common/options-sidebar'); ?>
 </fieldset>

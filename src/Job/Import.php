@@ -117,7 +117,7 @@ class Import extends AbstractJob
         $this->importResource = $this->resourceType === 'resources';
 
         $this->mappings = [];
-        $mappingClasses = $config['csvimport']['mappings'][$this->resourceType]['mappings'];
+        $mappingClasses = $config['csv_import']['mappings'][$this->resourceType];
         foreach ($mappingClasses as $mappingClass) {
             $mapping = new $mappingClass();
             $mapping->init($args, $services);
@@ -163,7 +163,7 @@ class Import extends AbstractJob
             $this->identifierPropertyId = (int) $args['identifier_property'];
         } else {
             $result = $this->api
-                ->search('properties', ['term' => $args['identifier_property']])->getContent();
+            ->search('properties', ['term' => $args['identifier_property']])->getContent();
             $this->identifierPropertyId = $result ? $result[0]->id() : null;
         }
 
@@ -215,9 +215,7 @@ class Import extends AbstractJob
     {
         $data = [];
         foreach ($rows as $row) {
-            if (!array_filter($row, function ($v) {
-                return strlen($v);
-            })) {
+            if (!array_filter($row, function ($v) { return strlen($v); })) {
                 $this->emptyLines++;
                 continue;
             }
@@ -622,8 +620,8 @@ SQL;
                 $this->logger->err(new Message('A resource type is required to import a resource.')); // @translate
             }
             // Avoid MediaSourceMapping issue when the resource type is unknown.
-            elseif (($entityJson['resource_type'] === 'media') && !empty($data[$key]['o:media'])) {
-                $data[$key] += reset($data[$key]['o:media']);
+            elseif (($entityJson['resource_type'] === 'media') && ($data[$key]['o:media'])) {
+                $data[$key] += $data[$key]['o:media'][0];
                 unset($data[$key]['o:media']);
             }
         }
@@ -805,7 +803,8 @@ SQL;
      */
     protected function removeEmptyData(array $data)
     {
-        foreach ($data as $name => $metadata) {
+        // Data are updated in place.
+        foreach ($data as $name => &$metadata) {
             switch ($name) {
                 case 'o:resource_template':
                 case 'o:resource_class':
@@ -835,12 +834,12 @@ SQL;
                         unset($data[$name]);
                     }
                     break;
-                // Properties.
                 default:
-                    if (is_array($metadata) && empty($metadata)) {
-                        unset($data[$name]);
+                    if (is_array($metadata)) {
+                        if (empty($metadata)) {
+                            unset($data[$name]);
+                        }
                     }
-                    break;
             }
         }
         return $data;
@@ -951,7 +950,7 @@ SQL;
     }
 
     /**
-     * Deduplicate data ids for collections of items set, items, media…
+     * Deduplicate data ids for collections of items set, items, media....
      *
      * @param array $data
      * @return array
@@ -959,14 +958,16 @@ SQL;
     protected function deduplicateIds($data)
     {
         $dataBase = $data;
+        // Base to normalize data in order to deduplicate them in one pass.
+        $base = [];
+        $base['id'] = ['o:id' => 0];
         // Deduplicate data.
         $data = array_map('unserialize', array_unique(array_map('serialize',
             // Normalize data.
-            array_map(function ($v) {
+            array_map(function ($v) use ($base) {
                 return isset($v['o:id']) ? ['o:id' => $v['o:id']] : $v;
-            }, $data)
-        )));
-        // Keep original data first.
+        }, $data))));
+        // Keep first original data.
         $data = array_intersect_key($dataBase, $data);
         return $data;
     }
@@ -991,9 +992,7 @@ SQL;
                     // Normalize values.
                     array_map(function ($v) use ($base) {
                         return array_replace($base[$v['type']], array_intersect_key($v, $base[$v['type']]));
-                    }, $value)
-                )))
-            );
+            }, $value)))));
         }
         return $values;
     }
@@ -1025,7 +1024,7 @@ SQL;
             }
         }
 
-        $sources = $this->getServiceLocator()->get('Config')['csvimport']['sources'];
+        $sources = $this->getServiceLocator()->get('Config')['csv_import']['sources'];
         if (!isset($sources[$mediaType])) {
             return;
         }
@@ -1046,8 +1045,7 @@ SQL;
             $this->logger->err('Resource type is empty.'); // @translate
         }
 
-        $config = $this->getServiceLocator()->get('Config');
-        if (!isset($config['csvimport']['mappings'][$this->resourceType])) {
+        if (!in_array($this->resourceType, ['items', 'item_sets', 'media', 'resources', 'users'])) {
             $this->hasErr = true;
             $this->logger->err(new Message('Resource type "%s" is not managed.', $this->resourceType)); // @translate
         }
@@ -1143,7 +1141,7 @@ SQL;
                     }, $result);
                     if ($itemIds) {
                         $entityManager = $this->getServiceLocator()->get('Omeka\EntityManager');
-                        $query = $entityManager->createQuery(
+                        $query = $entityManager ->createQuery(
                             sprintf('SELECT COUNT(media.id) FROM Omeka\Entity\Media media WHERE media.item IN (%s)',
                                 implode(',', $itemIds)));
                         $total = $query->getSingleScalarResult();

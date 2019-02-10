@@ -1,7 +1,5 @@
 /**
  * Initially based on Omeka S omeka2importer.js and resource-core.js.
- *
- * @todo Remove dead code (now, the options (wrench) are directly set).
  */
 (function ($) {
 
@@ -30,7 +28,7 @@
               // Remove old chosen html and rebind event.
               sidebar.find('.chosen-container').remove();
               sidebar.find('.chosen-select').chosen(chosenOptions);
-
+              
               // Rebind property selector.
               $('.selector li.selector-parent').on('click', function(e) {
                   e.stopPropagation();
@@ -38,14 +36,14 @@
                       $(this).toggleClass('show');
                   }
               });
-
+      
               $('.selector-filter').on('keydown', function(e) {
                   if (e.keyCode == 13) {
                       e.stopPropagation();
                       e.preventDefault();
                   }
               });
-
+      
               // Property selector, filter properties.
               $('.selector-filter').on('keyup', (function() {
                   var timer = 0;
@@ -205,21 +203,6 @@
             sidebar.find('[data-flag-class]').each(function() {
                 var flagInput = $(this);
                 var flagLiClass = flagInput.data('flag-class');
-                var flagUnique = flagInput.data('flag-unique') == '1';
-
-                // If this is a specific resource data, process the inputs of
-                // the selected resource data inputs only, and remove the other
-                // inputs.
-                var isSpecificInput = flagInput.parents('#specific-data').length === 1;
-                var isSpecificInputForResourceType = false;
-                var specificResourceType;
-                if (isSpecificInput) {
-                    specificResourceType = $('#data-resource-type-select').val();
-                    isSpecificInputForResourceType = flagInput.closest('div').hasClass(specificResourceType);
-                }
-
-                // Note: the hidden data are not changed.
-                // TODO Good rebind of data when opened, so there will no issues with hidden data.
 
                 if (flagInput.is('select')) {
                     var flagLabel = flagInput.data('flag-label');
@@ -235,9 +218,9 @@
 
                         // Show flag name instead of selected text for mapping using property selector.
                         if (flagInput.parents('.mapping').hasClass('property')) {
-                            flagLabel += ' [' + flagValue + ']';
+                            var flagLabel = flagLabel + ' [' + flagValue + ']';
                         } else {
-                            flagLabel += ' [' + flagInput.chosen().text() + ']';
+                            var flagLabel = flagLabel + ' [' + flagInput.chosen().text() + ']';
                         }
                     }
                     else {
@@ -247,16 +230,14 @@
                         var flagSelected = flagInput.find(':selected');
                         var flagValue = flagSelected.val();
                         var flagName = flagSelected.data('flag-name');
-                        flagLabel += ' [' + flagSelected.text() + ']';
+                        var flagLabel = flagLabel + ' [' + flagSelected.text() + ']';
                     }
 
-                    if (isSpecificInput && !isSpecificInputForResourceType) {
-                        flagValue = '';
-                    }
-                    applyMappings(flagName, flagValue, flagLiClass, flagLabel, flagUnique);
+                    applyMappings(flagName, flagValue, flagLiClass, flagLabel);
                 }
 
-                if (flagInput.is('input[type=checkbox]')) {
+                if (flagInput.is('input[type="checkbox"]')) {
+                    var flagName = flagInput.data('flag-name');
                     if (flagInput.parents('.toggle-view:hidden').length > 0) {
                         return;
                     }
@@ -267,7 +248,6 @@
                         var flagValue = flagInput.val();
                         applyMappings(flagName, flagValue, flagLiClass, flagLabel);
                     }
-                    applyMappings(flagName, flagValue, flagLiClass, flagLabel, flagUnique);
                 }
             });
 
@@ -275,7 +255,7 @@
                 // Looks like a stopPropagation on the selector-parent forces me to
                 // bind the event lower down the DOM, then work back up to the li.
                 var targetLi = $(this);
-
+    
                 // First, check if the property is already added.
                 var hasMapping = activeElement.find('ul.mappings li[data-property-id="' + targetLi.data('property-id') + '"]');
                 if (hasMapping.length === 0) {
@@ -393,139 +373,8 @@
             $(this).parents('li.mapping').remove();
         });
 
-        /**
-         * Manage options via a direct update of the mapping.
-         */
-
-        // Set/unset multivalue separator for all columns.
-        $(document).on('change', '#multivalue_by_default', function(e) {
-            setMultivalueSeparatorByDefault();
-        });
-
-        function setMultivalueSeparatorByDefault() {
-            var switcher = $('#multivalue_by_default').prop('checked');
-            var element = $('.element.mappable');
-            var multivalueSeparator = $('#multivalue_separator').val();
-            var targetRows = $('.element.mappable li.column-multivalue');
-            targetRows.removeClass('delete');
-            targetRows.find('.remove-option').css({ display: 'inline' });
-            targetRows.find('.restore-option').css({ display: 'none' });
-            if (switcher && multivalueSeparator !== '') {
-                element.find('li.column-multivalue').show();
-                element.find('.column-multivalue span.column-multivalue').text(multivalueSeparator);
-                element.find('input.column-multivalue').prop('disabled', false);
-                element.find('input.column-multivalue').val(multivalueSeparator);
-            } else {
-                element.find('li.column-multivalue').hide();
-                element.find('.column-multivalue span.column-multivalue').text('');
-                element.find('input.column-multivalue').prop('disabled', true);
-                element.find('input.column-multivalue').val('');
-            }
-        }
-
-        // Set/unset default language for all columns.
-        $(document).on('change', '#language_by_default', function(e) {
-            setLanguageByDefault();
-        });
-
-        function setLanguageByDefault() {
-            var switcher = $('#language_by_default').prop('checked');
-            var element = $('.element.mappable');
-            var lang = $('#language').val();
-            var targetRows = $('.element.mappable li.column-language');
-            targetRows.removeClass('delete');
-            targetRows.find('.remove-option').css({ display: 'inline' });
-            targetRows.find('.restore-option').css({ display: 'none' });
-            if (switcher && lang !== '' && Omeka.langIsValid(lang)) {
-                element.find('li.column-language').show();
-                element.find('.column-language span.column-language').text(lang);
-                element.find('input.column-language').prop('disabled', false);
-                element.find('input.column-language').val(lang);
-            } else {
-                element.find('li.column-language').hide();
-                element.find('.column-language span.column-language').text('');
-                element.find('input.column-language').prop('disabled', true);
-                element.find('input.column-language').val('');
-            }
-        }
-
-        $(document).on('click', '.o-icon-configure.sidebar-content', function(){
-            var multivalueSeparator = $('#content').find('.element.mappable.active').find('.column-multivalue.option span.column-multivalue').text();
-            $('#multivalue').val(multivalueSeparator);
-
-            var lang = $('#content').find('.element.mappable.active').find('.column-language.option span.column-language').text();
-            $('#value-language').val(lang);
-
-            var importType = $('#content').find('.element.mappable.active').find('.column-import.option span.option-label').text();
-            if (importType == '') {
-                $('#column-import').val('default');
-            } else if (importType == Omeka.jsTranslate('Import as URL reference')) {
-                $('#column-import').val('column-url');
-            } else if (importType == Omeka.jsTranslate('Import as Omeka S resource ID')) {
-                $('#column-import').val('column-reference');
-            }
-        });
-
-        $(document).on('keyup', '#multivalue', function(){
-            var multivalueSeparator = $(this).val();
-            var element = $('#content').find('.element.mappable.active');
-            if (multivalueSeparator !== '') {
-                element.find('li.column-multivalue').show();
-                element.find('.column-multivalue span.column-multivalue').text(multivalueSeparator);
-                element.find('input.column-multivalue').prop('disabled', false);
-                element.find('input.column-multivalue').val(multivalueSeparator);
-            } else {
-                element.find('li.column-multivalue').hide();
-                element.find('.column-multivalue span.column-multivalue').text('');
-                element.find('input.column-multivalue').prop('disabled', true);
-                element.find('input.column-multivalue').val('');
-            }
-        });
-
-        $(document).on('keyup', '#value-language', function(){
-            var lang = $(this).val();
-            var element = $('#content').find('.element.mappable.active');
-            if (lang !== '' && Omeka.langIsValid(lang)) {
-                this.setCustomValidity('');
-                element.find('li.column-language').show();
-                element.find('.column-language span.column-language').text(lang);
-                element.find('input.column-language').prop('disabled', false);
-                element.find('input.column-language').val(lang);
-            } else {
-                if (lang === '') {
-                    this.setCustomValidity('');
-                } else {
-                    this.setCustomValidity(Omeka.jsTranslate('Please enter a valid language tag'));
-                }
-                element.find('li.column-language').hide();
-                element.find('.column-language span.column-language').text('');
-                element.find('input.column-language').prop('disabled', true);
-                element.find('input.column-language').val('');
-            }
-        });
-
-        $(document).on('change', '#column-import', function(){
-            var importType = $(this).val();
-            var element = $('#content').find('.element.mappable.active');
-            if (importType === 'default') {
-                element.find('.column-import.option').hide();
-                element.find('.column-import.option .column-url').prop('disabled', true);
-                element.find('.column-import.option .column-reference').prop('disabled', true);
-            } else if (importType == 'column-url') {
-                element.find('.column-import.option').show();
-                element.find('.column-import.option .option-label').text(Omeka.jsTranslate('Import as URL reference'));
-                element.find('.column-import.option .column-url').prop('disabled', false);
-                element.find('.column-import.option .column-reference').prop('disabled', true);
-            } else if (importType == 'column-reference') {
-                element.find('.column-import.option').show();
-                element.find('.column-import.option .option-label').text(Omeka.jsTranslate('Import as Omeka S resource ID'));
-                element.find('.column-import.option .column-url').prop('disabled', true);
-                element.find('.column-import.option .column-reference').prop('disabled', false);
-            }
-        });
-
         /*
-         * Modified from resource-form.js in core, unavailable here.
+         * Modified from resource-form.js in core
          */
 
         $(document).on('keyup', 'input.value-language', function(e) {

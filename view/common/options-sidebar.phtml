@@ -1,6 +1,3 @@
-<?php
-$translate = $this->plugin('translate');
-?>
 <div id="column-options" class="sidebar">
     <div class="confirm-main">
         <a href="#" class="sidebar-close o-icon-close"><span class="screen-reader-text"><?php echo $this->translate('Close'); ?></span></a>
@@ -9,7 +6,7 @@ $translate = $this->plugin('translate');
 
         <p class="batch-edit-description"><?php echo $this->translate('Highlighted options will apply to selected column headers. Reset an option to cancel changes.'); ?></p>
 
-        <?php if (empty($resourceType) || !in_array($resourceType, ['users'])): ?>
+        <?php if (empty($resourceType) || in_array($resourceType, ['items', 'resources'])): ?>
         <div class="multivalue option">
             <label for="multivalue"><?php echo $this->translate('Use multivalue separator'); ?></label>
             <div class="option-inputs">
@@ -40,8 +37,7 @@ $translate = $this->plugin('translate');
             <a href="#" class="reset-link"><?php echo $this->translate('Reset'); ?></a>
         </div>
     </div>
-
     <div class="confirm-panel">
-        <button type="button"><?php echo $translate("Apply changes"); ?></button>
+        <button type="button"><?php echo $this->translate("Apply changes"); ?></button>
     </div>
 </div>

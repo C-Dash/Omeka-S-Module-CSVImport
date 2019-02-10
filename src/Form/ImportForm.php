@@ -6,8 +6,6 @@ use Zend\Form\Form;
 
 class ImportForm extends Form
 {
-    use EventManagerAwareTrait;
-
     /**
      * A list of standard delimiters.
      *
@@ -49,38 +47,21 @@ class ImportForm extends Form
 
     public function init()
     {
-        $inputFilter = $this->getInputFilter();
+        $this->setAttribute('action', 'csvimport/map');
+
+        $defaults = $this->configCsvImport['user_settings'];
 
         $this->add([
-            'name' => 'source',
-            'type' => Element\File::class,
-            'options' => [
-                'label' => 'Spreadsheet (csv, tsv or ods)', // @translate
-                'info' => 'The CSV, TSV or ODS file to upload. LibreOffice is recommended for compliant formats.', //@translate
-            ],
-            'attributes' => [
-                'id' => 'source',
-                'required' => 'true',
-            ],
-        ]);
-
-        $valueOptions = [];
-        foreach ($this->configCsvImport['mappings'] as $key => $mapping) {
-            $valueOptions[$key] = $mapping['label'];
-        }
-        $this->add([
-            'name' => 'resource_type',
-            'type' => Element\Select::class,
-            'options' => [
-                'label' => 'Import type', // @translate
-                'info' => 'The type of data being imported', // @translate
-                'value_options' => $valueOptions,
-            ],
-            'attributes' => [
-                'id' => 'resource_type',
-                // Set a default value.
-                'value' => 'items',
-            ],
+                'name' => 'source',
+                'type' => 'file',
+                'options' => [
+                    'label' => 'Spreadsheet (csv, tsv or ods)', // @translate
+                    'info' => 'The CSV, TSV or ODS file to upload. LibreOffice is recommended for compliant formats.', //@translate
+                ],
+                'attributes' => [
+                    'id' => 'source',
+                    'required' => 'true',
+                ],
         ]);
 
         // TODO Move the specific parameters into the source class.
@@ -92,14 +73,14 @@ class ImportForm extends Form
         $value = $this->userSettings->get('csv_import_delimiter', $defaults['csv_import_delimiter']);
         $this->add([
             'name' => 'delimiter',
-            'type' => Element\Select::class,
+            'type' => 'select',
             'options' => [
                 'label' => 'CSV column delimiter', // @translate
                 'info' => 'A single character that will be used to separate columns in the csv file.', // @translate
-                'value_options' => $valueOptions,
+                'value_options' => $valueParameters,
             ],
             'attributes' => [
-                'id' => 'delimiter',
+                'value' => $this->integrateParameter($value),
             ],
         ]);
 
@@ -107,7 +88,7 @@ class ImportForm extends Form
         $value = $this->userSettings->get('csv_import_enclosure', $defaults['csv_import_enclosure']);
         $this->add([
             'name' => 'enclosure',
-            'type' => Element\Select::class,
+            'type' => 'select',
             'options' => [
                 'label' => 'CSV column enclosure', // @translate
                 'info' => 'A single character that will be used to separate columns in the csv file. The enclosure can be omitted when the content does not contain the delimiter.', // @translate
@@ -166,12 +147,9 @@ class ImportForm extends Form
             ],
         ]);
 
+        $inputFilter = $this->getInputFilter();
         $inputFilter->add([
             'name' => 'source',
-            'required' => true,
-        ]);
-        $inputFilter->add([
-            'name' => 'resource_type',
             'required' => true,
         ]);
         $inputFilter->add([
@@ -182,11 +160,6 @@ class ImportForm extends Form
             'name' => 'enclosure',
             'required' => false,
         ]);
-
-        $addEvent = new Event('form.add_elements', $this);
-        $this->getEventManager()->triggerEvent($addEvent);
-        $event = new Event('form.add_input_filters', $this, ['inputFilter' => $inputFilter]);
-        $this->getEventManager()->triggerEvent($event);
     }
 
     /**

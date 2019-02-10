@@ -11,10 +11,6 @@ class ResourceSidebarFactory implements FactoryInterface
     {
         $auth = $services->get('Omeka\AuthenticationService');
         $user = $auth->getIdentity();
-        $formElementManager = $services->get('FormElementManager');
-        return new ResourceSidebar(
-            $user,
-            $formElementManager
-        );
+        return new ResourceSidebar($user);
     }
 }

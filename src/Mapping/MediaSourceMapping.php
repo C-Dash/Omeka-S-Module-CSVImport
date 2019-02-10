@@ -51,21 +51,21 @@ class MediaSourceMapping extends AbstractMapping
         }
 
         $config = $this->getServiceLocator()->get('Config');
-        $mediaAdapters = $config['csvimport']['media_ingester_adapter'];
+        $mediaAdapters = $config['csv_import']['media_ingester_adapter'];
         $action = $this->args['action'];
 
         $multivalueMap = isset($this->args['column-multivalue']) ? $this->args['column-multivalue'] : [];
-
+        $multivalueSeparator = $this->args['multivalue_separator'];
         foreach ($row as $index => $values) {
             if (isset($mediaMap[$index])) {
-                if (array_key_exists($index, $multivalueMap) && strlen($multivalueMap[$index])) {
-                    $values = explode($multivalueMap[$index], $values);
+                if (empty($multivalueMap[$index])) {
+                    $values = [$values];
+                } else {
+                    $values = explode($multivalueSeparator, $values);
                     $values = array_map('trim', $values);
                     if ($isMedia) {
                         array_splice($values, 1);
                     }
-                } else {
-                    $values = [$values];
                 }
 
                 $ingester = $mediaMap[$index];

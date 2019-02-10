@@ -1,9 +1,6 @@
-<?php
-$translate = $this->plugin('translate');
-?>
 <div id="resource-data" class="mapping-group">
     <a href="#" class="expand" aria-label="Expand">
-        <h4><?php echo $translate('Resource data'); ?></h4>
+        <h4><?php echo $this->translate('Resource data'); ?></h4>
     </a>
     <div class="collapsible">
         <div class="resource-mapping mappings">
@@ -100,11 +97,6 @@ $translate = $this->plugin('translate');
                 <?php endif; ?>
                 <option value="1" data-flag-name="column-is_public"><?php echo $this->translate('Visibility public/private'); ?></option>
             </select>
-        </div>
-
-        <div>
-            <?php // Remaining elements (none by default). ?>
-            <?php echo $this->formCollection($form); ?>
         </div>
     </div>
 </div>
