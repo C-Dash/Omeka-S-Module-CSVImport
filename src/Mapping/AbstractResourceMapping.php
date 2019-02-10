@@ -56,7 +56,7 @@ abstract class AbstractResourceMapping extends AbstractMapping
                 $values = [$values];
             } else {
                 $values = explode($multivalueSeparator, $values);
-                $values = array_map(function ($v) { return trim($v); }, $values);
+                $values = array_map('trim', $values);
             }
             $values = array_filter($values, 'strlen');
             if ($values) {
@@ -187,7 +187,7 @@ abstract class AbstractResourceMapping extends AbstractMapping
         }
 
         if (isset($this->map['isPublic'][$index])) {
-            $value = reset($values);
+            $value = array_pop($values);
             if (strlen($value)) {
                 $data['o:is_public'] = in_array(strtolower($value), ['false', 'no', 'off', 'private'])
                     ? false
@@ -306,7 +306,7 @@ abstract class AbstractResourceMapping extends AbstractMapping
         $response = $this->api->search('resource_classes', ['term' => $term]);
         $content = $response->getContent();
         if (empty($content)) {
-            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate;
+            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate
                 $term);
             $this->logger->err($message);
             $this->setHasErr(true);
@@ -315,7 +315,7 @@ abstract class AbstractResourceMapping extends AbstractMapping
         $class = $content[0];
         $classTerm = $class->term();
         if (strtolower($term) != strtolower($classTerm)) {
-            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate;
+            $message = new Message('"%s" is not a valid resource class. Resource Classes must be a Class found on the Vocabularies page.', // @translate
                 $term);
             $this->logger->err($message);
             $this->setHasErr(true);

@@ -25,8 +25,8 @@ class Undo extends AbstractJob
                     break;
                 }
                 try {
-                    $csvResponse = $api->delete('csvimport_entities', $csvEntity->id());
-                    $entityResponse = $api->delete($csvEntity->resourceType(), $csvEntity->entityId());
+                    $api->delete('csvimport_entities', $csvEntity->id());
+                    $api->delete($csvEntity->resourceType(), $csvEntity->entityId());
                 } catch (\Exception $e) {
                     // Nothing to do: already deleted.
                     // TODO Implement on delete cascade in the entity CSVImportEntity.

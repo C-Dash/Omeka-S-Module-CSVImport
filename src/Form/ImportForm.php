@@ -2,6 +2,7 @@
 namespace CSVImport\Form;
 
 use Omeka\Settings\UserSettings;
+use Zend\Form\Element;
 use Zend\Form\Form;
 
 class ImportForm extends Form
@@ -53,7 +54,7 @@ class ImportForm extends Form
 
         $this->add([
                 'name' => 'source',
-                'type' => 'file',
+                'type' => Element\File::class,
                 'options' => [
                     'label' => 'Spreadsheet (csv, tsv or ods)', // @translate
                     'info' => 'The CSV, TSV or ODS file to upload. LibreOffice is recommended for compliant formats.', //@translate
@@ -73,7 +74,7 @@ class ImportForm extends Form
         $value = $this->userSettings->get('csv_import_delimiter', $defaults['csv_import_delimiter']);
         $this->add([
             'name' => 'delimiter',
-            'type' => 'select',
+            'type' => Element\Select::class,
             'options' => [
                 'label' => 'CSV column delimiter', // @translate
                 'info' => 'A single character that will be used to separate columns in the csv file.', // @translate
@@ -88,7 +89,7 @@ class ImportForm extends Form
         $value = $this->userSettings->get('csv_import_enclosure', $defaults['csv_import_enclosure']);
         $this->add([
             'name' => 'enclosure',
-            'type' => 'select',
+            'type' => Element\Select::class,
             'options' => [
                 'label' => 'CSV column enclosure', // @translate
                 'info' => 'A single character that will be used to separate columns in the csv file. The enclosure can be omitted when the content does not contain the delimiter.', // @translate
@@ -101,7 +102,7 @@ class ImportForm extends Form
 
         $this->add([
                 'name' => 'resource_type',
-                'type' => 'select',
+                'type' => Element\Select::class,
                 'options' => [
                     'label' => 'Import type', // @translate
                     'info' => 'The type of data being imported', // @translate
@@ -120,7 +121,7 @@ class ImportForm extends Form
 
         $this->add([
             'name' => 'automap_check_names_alone',
-            'type' => 'checkbox',
+            'type' => Element\Checkbox::class,
             'options' => [
                 'label' => 'Automap with simple labels', // @translate
                 'info' => 'If checked, column headings that match property labels will be mapped automatically (for example, "Title" to dcterms:title).', // @translate
@@ -135,7 +136,7 @@ class ImportForm extends Form
 
         $this->add([
             'name' => 'comment',
-            'type' => 'textarea',
+            'type' => Element\Textarea::class,
             'options' => [
                 'label' => 'Comment', // @translate
                 'info' => 'A note about the purpose or source of this import', // @translate

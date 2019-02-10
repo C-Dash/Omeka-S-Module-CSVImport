@@ -6,6 +6,7 @@ use Omeka\Form\Element\ItemSetSelect;
 use Omeka\Form\Element\PropertySelect;
 use Omeka\Form\Element\ResourceSelect;
 use Omeka\Form\Element\ResourceClassSelect;
+use Zend\Form\Element;
 use Zend\Form\Form;
 
 class MappingForm extends Form
@@ -23,7 +24,7 @@ class MappingForm extends Form
 
         $this->add([
             'name' => 'resource_type',
-            'type' => 'hidden',
+            'type' => Element\Hidden::class,
             'attributes' => [
                 'value' => $resourceType,
                 'required' => true,
@@ -32,7 +33,7 @@ class MappingForm extends Form
 
         $this->add([
             'name' => 'delimiter',
-            'type' => 'hidden',
+            'type' => Element\Hidden::class,
             'attributes' => [
                 'value' => $this->getOption('delimiter'),
                 'required' => true,
@@ -41,7 +42,7 @@ class MappingForm extends Form
 
         $this->add([
             'name' => 'enclosure',
-            'type' => 'hidden',
+            'type' => Element\Hidden::class,
             'attributes' => [
                 'value' => $this->getOption('enclosure'),
                 'required' => true,
@@ -50,7 +51,7 @@ class MappingForm extends Form
 
         $this->add([
             'name' => 'comment',
-            'type' => 'hidden',
+            'type' => Element\Hidden::class,
             'attributes' => [
                 'value' => $this->getOption('comment'),
             ]
@@ -58,7 +59,7 @@ class MappingForm extends Form
 
         $this->add([
             'name' => 'automap_check_names_alone',
-            'type' => 'hidden',
+            'type' => Element\Hidden::class,
             'attributes' => [
                 'value' => $this->getOption('automap_check_names_alone'),
                 'required' => true,
@@ -149,7 +150,7 @@ class MappingForm extends Form
 
             $basicSettingsFieldset->add([
                 'name' => 'o:is_public',
-                'type' => 'radio',
+                'type' => Element\Radio::class,
                 'options' => [
                     'label' => 'Visibility', // @translate
                     'info' => 'Set visibility for all imported resources. Specific mappings can override this setting.', // @translate
@@ -167,7 +168,7 @@ class MappingForm extends Form
                 case 'item_sets':
                     $basicSettingsFieldset->add([
                         'name' => 'o:is_open',
-                        'type' => 'radio',
+                        'type' => Element\Radio::class,
                         'options' => [
                             'label' => 'Open/closed to additions', // @translate
                             'info' => 'Set whether imported item sets are open to additions. Specific mappings can override this setting.', // @translate
@@ -202,7 +203,7 @@ class MappingForm extends Form
                 case 'resources':
                     $basicSettingsFieldset->add([
                         'name' => 'o:is_open',
-                        'type' => 'radio',
+                        'type' => Element\Radio::class,
                         'options' => [
                             'label' => 'Item sets open/closed to additions', // @translate
                             'info' => 'Set whether imported item sets are open to additions. Specific mappings can override this setting.', // @translate
@@ -235,7 +236,7 @@ class MappingForm extends Form
 
             $basicSettingsFieldset->add([
                 'name' => 'multivalue_separator',
-                'type' => 'text',
+                'type' => Element\Text::class,
                 'options' => [
                     'label' => 'Multivalue separator', // @translate
                     'info' => 'The separator to use for columns with multiple values', // @translate
@@ -251,7 +252,7 @@ class MappingForm extends Form
 
             $basicSettingsFieldset->add([
                 'name' => 'global_language',
-                'type' => 'text',
+                'type' => Element\Text::class,
                 'options' => [
                     'label' => 'Language', // @translate
                     'info' => 'Language setting to apply to all imported literal data. Individual property mappings can override the setting here.', // @translate
@@ -287,7 +288,7 @@ class MappingForm extends Form
 
             $advancedSettingsFieldset->add([
                 'name' => 'action',
-                'type' => 'select',
+                'type' => Element\Select::class,
                 'options' => [
                     'label' => 'Action', // @translate
                     'info' => 'By default, an import creates new resources. Select from this dropdown to choose an alternate action for the import. For more information on each action, see the documentation.', // @translate
@@ -302,7 +303,7 @@ class MappingForm extends Form
             if ($columns) {
                 $advancedSettingsFieldset->add([
                     'name' => 'identifier_column',
-                    'type' => 'Select',
+                    'type' => Element\Select::class,
                     'options' => [
                         'label' => 'Resource identifier column', // @translate
                         'value_options' => $this->getOption('columns'),
@@ -343,7 +344,7 @@ class MappingForm extends Form
 
             $advancedSettingsFieldset->add([
                 'name' => 'action_unidentified',
-                'type' => 'radio',
+                'type' => Element\Radio::class,
                 'options' => [
                     'label' => 'Action on unidentified resources', // @translate
                     'info' => 'This option determines what to do when a resource does not exist but the action applies to an existing resource ("Append", "Update", or "Replace"). This option is not used when the main action is "Create", "Delete" or "Skip".', // @translate
@@ -361,7 +362,7 @@ class MappingForm extends Form
 
             $advancedSettingsFieldset->add([
                 'name' => 'rows_by_batch',
-                'type' => 'Number',
+                'type' => Element\Number::class,
                 'options' => [
                     'label' => 'Number of rows to process by batch', // @translate
                     'info' => 'By default, rows are processed by 20. In some cases, to set a value of 1 may avoid issues.', // @translate
@@ -401,7 +402,7 @@ class MappingForm extends Form
                 'name' => 'o:item_set',
                 'required' => false,
             ]);
-            
+
             $advancedSettingsInputFilter = $inputFilter->get('advanced-settings');
             $advancedSettingsInputFilter->add([
                 'name' => 'action',

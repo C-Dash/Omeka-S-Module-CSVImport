@@ -17,13 +17,13 @@ class UserMapping extends AbstractMapping
      * Process a row from the CSV file.
      *
      * @param array $row
-     * @return array $itemJson including the added data
+     * @return array Added data.
      */
     public function processRow(array $row)
     {
         // Reset the data and the map between rows.
         $this->setHasErr(false);
-        $userJson = [];
+        $data = [];
 
         $emailIndex = array_keys($this->args['column-user_email'])[0];
         $nameIndex = array_keys($this->args['column-user_name'])[0];
@@ -32,22 +32,22 @@ class UserMapping extends AbstractMapping
         foreach ($row as $index => $value) {
             switch ($index) {
                 case $emailIndex:
-                    $userJson['o:email'] = $value;
+                    $data['o:email'] = $value;
                 break;
 
                 case $nameIndex:
-                    $userJson['o:name'] = $value;
+                    $data['o:name'] = $value;
                 break;
 
                 case $roleIndex:
-                    $userJson['o:role'] = $value;
+                    $data['o:role'] = $value;
                 break;
             }
         }
 
-        if (empty($userJson['o:name'])) {
-            $userJson['o:name'] = $userJson['o:email'];
+        if (empty($data['o:name'])) {
+            $data['o:name'] = $data['o:email'];
         }
-        return $userJson;
+        return $data;
     }
 }

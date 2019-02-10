@@ -364,7 +364,7 @@ class Import extends AbstractJob
         foreach ($contents as $resourceReference) {
             $createImportEntitiesJson[] = $this->buildImportRecordJson($resourceReference);
         }
-        $createImportRecordResponse = $this->api->batchCreate(
+        $this->api->batchCreate(
             'csvimport_entities', $createImportEntitiesJson, [], ['continueOnError' => true]);
     }
 
@@ -415,16 +415,16 @@ class Import extends AbstractJob
             try {
                 switch ($action) {
                     case self::ACTION_APPEND:
-                        $response = $this->append($this->resourceType, $id, $data[$key]);
+                        $this->append($this->resourceType, $id, $data[$key]);
                         break;
                     case self::ACTION_REVISE:
-                        $response = $this->updateRevise($this->resourceType, $id, $data[$key], self::ACTION_REVISE);
+                        $this->updateRevise($this->resourceType, $id, $data[$key], self::ACTION_REVISE);
                         break;
                     case self::ACTION_UPDATE:
-                        $response = $this->updateRevise($this->resourceType, $id, $data[$key], self::ACTION_UPDATE);
+                        $this->updateRevise($this->resourceType, $id, $data[$key], self::ACTION_UPDATE);
                         break;
                     case self::ACTION_REPLACE:
-                        $response = $this->api->update($this->resourceType, $id, $data[$key], $fileData, $options);
+                        $this->api->update($this->resourceType, $id, $data[$key], $fileData, $options);
                         break;
                 }
                 $updatedIds[$key] = $id;
@@ -620,8 +620,8 @@ SQL;
                 $this->logger->err(new Message('A resource type is required to import a resource.')); // @translate
             }
             // Avoid MediaSourceMapping issue when the resource type is unknown.
-            elseif (($entityJson['resource_type'] === 'media') && ($data[$key]['o:media'])) {
-                $data[$key] += $data[$key]['o:media'][0];
+            elseif (($entityJson['resource_type'] === 'media') && !empty($data[$key]['o:media'])) {
+                $data[$key] += reset($data[$key]['o:media']);
                 unset($data[$key]['o:media']);
             }
         }
@@ -754,7 +754,7 @@ SQL;
         $newData = array_replace($currentData, $data);
 
         $fileData = [];
-        $options['isPartial'] = false;
+        $options = ['isPartial' => false];
         return $this->api->update($resourceType, $id, $newData, $fileData, $options);
     }
 
@@ -788,6 +788,7 @@ SQL;
         $newData = array_replace($data, $replaced);
 
         $fileData = [];
+        $options = [];
         $options['isPartial'] = true;
         $options['collectionAction'] = 'replace';
         return $this->api->update($resourceType, $id, $newData, $fileData, $options);
@@ -1178,7 +1179,7 @@ SQL;
             'has_err' => $this->hasErr,
             'stats' => $this->stats,
         ];
-        $response = $this->api->update('csvimport_imports', $this->importRecord->id(), $csvImportJson);
+        $this->api->update('csvimport_imports', $this->importRecord->id(), $csvImportJson);
         if ($this->source) {
             $this->source->clean();
         }
