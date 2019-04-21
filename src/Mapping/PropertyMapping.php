@@ -1,12 +1,44 @@
 <?php
 namespace CSVImport\Mapping;
 
+use CSVImport\Mvc\Controller\Plugin\FindResourcesFromIdentifiers;
+use Omeka\Stdlib\Message;
+use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\View\Renderer\PhpRenderer;
 
 class PropertyMapping extends AbstractMapping
 {
     protected $label = 'Properties'; // @translate
     protected $name = 'property-selector';
+
+    /**
+     * @var FindResourcesFromIdentifiers
+     */
+    protected $findResourceFromIdentifier;
+
+    /**
+     * @var int|string
+     */
+    protected $identifierPropertyId;
+
+    public function init(array $args, ServiceLocatorInterface $serviceLocator)
+    {
+        parent::init($args, $serviceLocator);
+        $this->findResourceFromIdentifier = $serviceLocator->get('ControllerPluginManager')
+            ->get('findResourceFromIdentifier');
+
+        // The main identifier property may be used as term or as id in some
+        // places, so prepare it one time only.
+        if (empty($args['identifier_property']) || $args['identifier_property'] === 'internal_id') {
+            $this->identifierPropertyId = 'internal_id';
+        } elseif (is_numeric($args['identifier_property'])) {
+            $this->identifierPropertyId = (int) $args['identifier_property'];
+        } else {
+            $result = $this->api
+                ->search('properties', ['term' => $args['identifier_property']])->getContent();
+            $this->identifierPropertyId = $result ? $result[0]->id() : 'internal_id';
+        }
+    }
 
     public function getSidebar(PhpRenderer $view)
     {
@@ -80,8 +112,9 @@ class PropertyMapping extends AbstractMapping
                                 break;
 
                             case 'resource':
+                                $identifier = $this->findResource($value, $this->identifierPropertyId);
                                 $data[$propertyTerm][] = [
-                                    'value_resource_id' => $value,
+                                    'value_resource_id' => $identifier,
                                     'property_id' => $propertyId,
                                     'type' => $type,
                                 ];
@@ -108,5 +141,20 @@ class PropertyMapping extends AbstractMapping
         }
 
         return $data;
+    }
+
+    protected function findResource($identifier, $identifierProperty = 'internal_id')
+    {
+        $resourceType = $this->args['resource_type'];
+        $findResourceFromIdentifier = $this->findResourceFromIdentifier;
+        $resourceId = $findResourceFromIdentifier($identifier, $identifierProperty, $resourceType);
+        if (empty($resourceId)) {
+            $this->logger->err(new Message('"%s" (%s) is not a valid resource identifier.', // @translate
+                $identifier, $identifierProperty));
+            $this->setHasErr(true);
+            return false;
+        }
+
+        return $resourceId;
     }
 }
