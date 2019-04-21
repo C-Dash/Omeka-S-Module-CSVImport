@@ -42,7 +42,7 @@ class PropertyMapping extends AbstractMapping
             $referenceMap = $this->args['column-reference'];
         }
         if (isset($this->args['column-language'])) {
-            $languageMap = $this->args['column-language'];
+            $languageSettings = $this->args['column-language'];
         }
 
         // Get default option values.
