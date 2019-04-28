@@ -94,7 +94,8 @@ abstract class AbstractResourceMapping extends AbstractMapping
             $data['o:resource_template'] = ['o:id' => (int) $this->args['o:resource_template']['o:id']];
         }
         if (!empty($this->args['o:resource_class']['o:id'])) {
-            $data['o:resource_class'] = ['o:id' => (int) $this->args['o:resource_class']['o:id']];;
+            $data['o:resource_class'] = ['o:id' => (int) $this->args['o:resource_class']['o:id']];
+            ;
         }
         if (!empty($this->args['o:owner']['o:id'])) {
             $data['o:owner'] = ['o:id' => (int) $this->args['o:owner']['o:id']];

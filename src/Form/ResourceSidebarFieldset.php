@@ -124,7 +124,7 @@ class ResourceSidebarFieldset extends Fieldset
                 'data-flag-unique' => '1',
                 'data-flag-name' => 'column-is_open',
                 'data-flag-label' => $translate('Open to additions'), // @translate
-            ]
+            ],
         ]);
     }
 

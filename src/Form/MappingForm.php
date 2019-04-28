@@ -54,7 +54,7 @@ class MappingForm extends Form
             'type' => Element\Hidden::class,
             'attributes' => [
                 'value' => $this->getOption('comment'),
-            ]
+            ],
         ]);
 
         $this->add([
@@ -72,7 +72,7 @@ class MappingForm extends Form
             'attributes' => [
                 'id' => 'csv-import-basics-fieldset',
                 'class' => 'section',
-            ]
+            ],
         ]);
 
         $basicSettingsFieldset = $this->get('basic-settings');
@@ -272,7 +272,7 @@ class MappingForm extends Form
                 'attributes' => [
                     'id' => 'csv-import-advanced-fieldset',
                     'class' => 'section',
-                ]
+                ],
             ]);
 
             $advancedSettingsFieldset = $this->get('advanced-settings');
@@ -311,12 +311,12 @@ class MappingForm extends Form
                     'attributes' => [
                         'id' => 'identifier_column',
                         'class' => 'action-option',
-                    ]
+                    ],
                 ]);
             } else {
                 $advancedSettingsFieldset->add([
                     'name' => 'identifier_column',
-                    'type' => 'Number'
+                    'type' => 'Number',
                 ]);
             }
 
@@ -371,7 +371,7 @@ class MappingForm extends Form
                     'value' => $userSettings->get(
                         'csv_import_rows_by_batch',
                         $default['csv_import_rows_by_batch']),
-                    'min'  => '1',
+                    'min' => '1',
                     'step' => '1',
                 ],
             ]);
