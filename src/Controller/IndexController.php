@@ -452,7 +452,7 @@ class IndexController extends AbstractActionController
     protected function saveUserSettings(array $settings)
     {
         foreach ($this->config['csv_import']['user_settings'] as $key => $value) {
-            $name = substr($key, strlen('csv_import_'));
+            $name = mb_substr($key, mb_strlen('csv_import_'));
             if (isset($settings[$name])) {
                 $this->userSettings()->set($key, $settings[$name]);
             }

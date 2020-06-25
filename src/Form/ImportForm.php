@@ -172,9 +172,9 @@ class ImportForm extends Form
     public function extractParameter($value)
     {
         if (strpos($value, '__>') === 0
-            && ($pos = strpos($value, '<__')) == (strlen($value) - 3)
+            && ($pos = mb_strpos($value, '<__')) == (mb_strlen($value) - 3)
         ) {
-            $result = substr($value, 3, $pos - 3);
+            $result = mb_substr($value, 3, $pos - 3);
             return $result === '\r' ? "\r" : $result;
         }
         return $value;
