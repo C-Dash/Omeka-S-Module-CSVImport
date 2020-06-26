@@ -73,7 +73,7 @@ class Import extends AbstractJob
     protected $args;
 
     /**
-     * @var array
+     * @var \CSVImport\Mapping\MappingInterface[]
      */
     protected $mappings;
 
