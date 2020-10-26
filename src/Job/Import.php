@@ -8,7 +8,7 @@ use finfo;
 use Omeka\Mvc\Controller\Plugin\Api;
 use Omeka\Job\AbstractJob;
 use Omeka\Stdlib\Message;
-use Zend\Log\Logger;
+use Laminas\Log\Logger;
 
 class Import extends AbstractJob
 {
@@ -178,8 +178,11 @@ class Import extends AbstractJob
             $this->rowsByBatch = (int) $args['rows_by_batch'];
         }
 
-        // The core allows batch processes only for deletion.
-        if (!in_array($args['action'], [self::ACTION_DELETE, self::ACTION_SKIP])) {
+        // Force row-at-a-time processing for mixed-resource imports to allow
+        // rows to freely reference data from prior rows
+        if ($this->resourceType === 'resources'
+            && !in_array($args['action'], [self::ACTION_DELETE, self::ACTION_SKIP])
+        ) {
             $this->rowsByBatch = 1;
         }
 
@@ -198,7 +201,7 @@ class Import extends AbstractJob
             $data = $this->mapRows($rows);
             $this->processBatchData($data);
             $offset += $this->rowsByBatch;
-        };
+        }
 
         if ($this->emptyLines) {
             $this->logger->info(new Message('%d empty lines were skipped.', // @translate
@@ -264,6 +267,8 @@ class Import extends AbstractJob
             case self::ACTION_REVISE:
             case self::ACTION_UPDATE:
             case self::ACTION_REPLACE:
+                $originalIdentityMap = $this->getServiceLocator()->get('Omeka\EntityManager')->getUnitOfWork()->getIdentityMap();
+
                 $findResourcesFromIdentifiers = $this->findResourcesFromIdentifiers;
                 $identifiers = $this->extractIdentifiers($data);
                 $ids = $findResourcesFromIdentifiers($identifiers, $this->identifierProperties, $this->resourceType);
@@ -297,6 +302,7 @@ class Import extends AbstractJob
                     $dataToProcess = $this->identifyMedias($dataToProcess, $idsToProcess);
                 }
                 $this->update($dataToProcess, $idsToProcess, $args['action']);
+                $this->detachAllNewEntities($originalIdentityMap);
                 break;
 
             case self::ACTION_DELETE:
@@ -1208,6 +1214,28 @@ SQL;
         $response = $this->api->update('csvimport_imports', $this->importRecord->id(), $csvImportJson);
         if ($this->source) {
             $this->source->clean();
+        }
+    }
+
+    /**
+     * Given an old copy of the Doctrine identity map, reset
+     * the entity manager to that state by detaching all entities that
+     * did not exist in the prior state.
+     *
+     * @internal This is a copy-paste of the functionality from the abstract entity adapter
+     *
+     * @param array $oldIdentityMap
+     */
+    protected function detachAllNewEntities(array $oldIdentityMap)
+    {
+        $entityManager = $this->getServiceLocator()->get('Omeka\EntityManager');
+        $identityMap = $entityManager->getUnitOfWork()->getIdentityMap();
+        foreach ($identityMap as $entityClass => $entities) {
+            foreach ($entities as $idHash => $entity) {
+                if (!isset($oldIdentityMap[$entityClass][$idHash])) {
+                    $entityManager->detach($entity);
+                }
+            }
         }
     }
 }
