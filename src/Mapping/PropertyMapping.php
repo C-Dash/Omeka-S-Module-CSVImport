@@ -35,7 +35,7 @@ class PropertyMapping extends AbstractMapping
         // The main identifier properties may be used as term or as id in some
         // places, so prepare them one time only.
         $this->identifierProperties = [];
-        foreach ($args['identifier_properties'] as $identifierProperty) {
+        foreach ($args['identifier_properties'] ?? [] as $identifierProperty) {
             if ($identifierProperty === 'o:id') {
                 $this->identifierProperties[] = 'o:id';
             } elseif (is_numeric($identifierProperty)) {
