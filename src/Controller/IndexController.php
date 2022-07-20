@@ -49,6 +49,11 @@ class IndexController extends AbstractActionController
 
     public function indexAction()
     {
+        // Added by pbc
+        $message = 'From the IndexAction Function'; // @translate
+        $this->messenger()->addWarning($message);
+        // end of pbcadd
+
         $view = new ViewModel;
         $form = $this->getForm(ImportForm::class);
         $view->form = $form;
