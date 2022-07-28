@@ -50,8 +50,8 @@ class IndexController extends AbstractActionController
     public function indexAction()
     {
         // Added by pbc
-        $message = 'From the IndexAction Function'; // @translate
-        $this->messenger()->addWarning($message);
+        $message = 'Hello from the cdash - hacked IndexController.php/IndexAction Function'; // @translate
+        $this->messenger()->addSuccess($message);
         // end of pbcadd
 
         $view = new ViewModel;
@@ -103,7 +103,14 @@ class IndexController extends AbstractActionController
             $tempPath = $this->getTempPath();
             $this->moveToTemp($post['source']['tmp_name']);
 
-            $args = $this->cleanArgs($post);
+            // Added by pbc
+            if (!empty($post['saved_args_file']) && file_exists($post['saved_args_file']['tmp_name'])) {
+                $args = $this->getSavedArgs($post['saved_args_file'], $post['source'], $tempPath);
+                $prefabArgs = true;
+            } else { 
+                $args = $this->cleanArgs($post); 
+                $prefabArgs = false;
+            }
 
             $source->init($this->config);
             $source->setSource($tempPath);
@@ -114,6 +121,31 @@ class IndexController extends AbstractActionController
                 $this->messenger()->addError($message);
                 return $this->redirect()->toRoute('admin/csvimport');
             }
+
+            // pbc commented this out. 
+            // $args = $this->cleanArgs($post); 
+            // And added this.  Skips mapping form and goes directly to import job if
+            // saved mappings have been loaded
+            if ($prefabArgs === true)
+            {
+                $dispatcher = $this->jobDispatcher();
+                $job = $dispatcher->dispatch('CSVImport\Job\Import', $args);
+                // The CsvImport record is created in the job, so it doesn't
+                // happen until the job is done.
+                $message = new Message(
+                    'Importing in background (%sjob #%d%s)', // @translate
+                    sprintf('<a href="%s">',
+                        htmlspecialchars($this->url()->fromRoute('admin/id', ['controller' => 'job', 'id' => $job->getId()]))
+                    ),
+                    $job->getId(),
+                   '</a>'
+                );
+                $message->setEscapeHtml(false);
+                $this->messenger()->addSuccess($message);
+                return $this->redirect()->toRoute('admin/csvimport/past-imports', ['action' => 'browse'], true);
+
+            } 
+            // End pbc addition
 
             $columns = $source->getHeaders();
             if (empty($columns)) {
@@ -243,6 +275,21 @@ class IndexController extends AbstractActionController
         return $source;
     }
 
+    // This function added by pbc
+    // Information about the source file was saved with args and must be replaced 
+    // with information about current source.
+    protected function getSavedArgs(array $argsFileData, array $sourceFileData, string $tempPath)
+    {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $json = file_get_contents($argsFileData['tmp_name']);
+        $saved_args = json_decode($json,true);        
+        $saved_args['filepath'] = $tempPath;
+        $saved_args['filename'] = $sourceFileData['name'];
+        $saved_args['filesize'] = $sourceFileData['size'];
+        $saved_args['saved_mappings'] = $argsFileData['name'];
+        return $saved_args; 
+    }
+    
     /**
      * Helper to return ordered mappings of the selected resource type.
      *
