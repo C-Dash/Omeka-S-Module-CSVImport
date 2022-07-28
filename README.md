@@ -9,7 +9,7 @@ Most often, the import will create new Omeka S items. It is also possible to imp
 
 See the [Omeka S user manual](http://omeka.org/s/docs/user-manual/modules/csvimport/) for user documentation.
 
-This CDASH version has a couple of modifications:
+CDASH Modifications:
 
 1. When importing Items, a column in the import table may contain references to the DC Identifier of an existing Omeka resource.  This attribute is set using the Column Settings (Wrench tool) to set Data Type to Omeka Resource.  Linking to identifier attributes other than Dublin Core: Identifier can be arranged by adjusting Resource Identifier Properties under the Basic Settings tab. 
 This feature was added by [Daniel-KM](https://github.com/Daniel-KM/Omeka-S-module-CSVImport/tree/feature/identifier_resource)
